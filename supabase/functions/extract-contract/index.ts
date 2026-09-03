@@ -1,10 +1,16 @@
 // 임대지기 계약서 판독 서버 — Supabase Edge Function (서울 리전)
-// 앱에서 계약서 사진(base64)을 받아 Upstage Information Extract(국내 기업)로 항목을 추출해 돌려준다.
+// 앱에서 계약서 사진(base64)을 받아 AI로 항목을 추출해 돌려준다. 판독 엔진은 비밀값으로 선택:
+//   - 데모(무료):  GEMINI_API_KEY 만 등록  → Google Gemini 무료 티어 (카드 불필요)
+//   - 실서비스:    UPSTAGE_API_KEY 등록     → Upstage Information Extract (국내 기업, 유료)
+//   둘 다 있으면 ENGINE 비밀값(gemini | upstage)으로 지정, 없으면 upstage 우선.
 //
 // 비밀값(Edge Functions → Secrets):
-//   UPSTAGE_API_KEY   (필수)  https://console.upstage.ai 에서 발급
-//   ALLOWED_ORIGINS   (선택)  허용할 앱 주소, 쉼표 구분. 예: https://jssong-hub.github.io  (비우면 모두 허용)
+//   GEMINI_API_KEY    (데모)  https://aistudio.google.com 에서 발급
+//   GEMINI_MODEL      (선택)  기본 gemini-2.5-flash
+//   UPSTAGE_API_KEY   (실서비스)  https://console.upstage.ai 에서 발급
 //   UPSTAGE_ENDPOINT  (선택)  기본 https://api.upstage.ai/v1/information-extraction/chat/completions
+//   ENGINE            (선택)  gemini | upstage
+//   ALLOWED_ORIGINS   (선택)  허용할 앱 주소, 쉼표 구분. 예: https://jssong-hub.github.io  (비우면 모두 허용)
 
 const UPSTAGE_ENDPOINT = Deno.env.get("UPSTAGE_ENDPOINT") ??
   "https://api.upstage.ai/v1/information-extraction/chat/completions";
@@ -86,7 +92,44 @@ async function callUpstage(images: string[], key: string) {
   throw new Error("판독 실패");
 }
 
-// Upstage 결과 → 앱이 쓰는 형식
+const GEMINI_PROMPT = `당신은 한국 부동산 임대차계약서 검토 보조원입니다. 첨부된 계약서 사진(들)을 읽고, 아래 JSON 스키마의 필드를 채운 JSON만 출력하세요(설명·코드블록 금지). 금액은 "金 삼천만 원정"처럼 한글·한자로 적혀 있어도 원 단위 정수로 환산하고, 읽을 수 없는 값은 null 또는 빈 문자열로 두세요.
+스키마: ` + JSON.stringify(SCHEMA);
+
+async function callGemini(images: string[], key: string) {
+  const model = Deno.env.get("GEMINI_MODEL") ?? "gemini-2.5-flash";
+  const parts: any[] = images.map((u) => { const m = /^data:(image\/[a-z+]+);base64,(.+)$/i.exec(u)!; return { inline_data: { mime_type: m[1], data: m[2] } }; });
+  parts.push({ text: GEMINI_PROMPT });
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-goog-api-key": key },
+      body: JSON.stringify({ contents: [{ role: "user", parts }], generationConfig: { temperature: 0, response_mime_type: "application/json", max_output_tokens: 2048 } }),
+    });
+    if (r.status === 429 || r.status >= 500) {
+      if (attempt === 3) throw new Error(r.status === 429 ? "무료 사용량을 잠시 초과했습니다. 1분 후 다시 시도해 주세요" : `판독 서비스 오류 ${r.status}`);
+      await sleep(800 * Math.pow(2, attempt) + Math.random() * 300);
+      continue;
+    }
+    const j = await r.json();
+    if (!r.ok) throw new Error(j?.error?.message ?? `판독 서비스 오류 ${r.status}`);
+    const text = (j?.candidates?.[0]?.content?.parts ?? []).map((p: any) => p.text ?? "").join("");
+    const m = String(text).match(/\{[\s\S]*\}/);
+    return JSON.parse(m ? m[0] : text);
+  }
+  throw new Error("판독 실패");
+}
+
+function pickEngine(): { name: string; call: (imgs: string[]) => Promise<Record<string, any>> } | null {
+  const up = Deno.env.get("UPSTAGE_API_KEY"), gm = Deno.env.get("GEMINI_API_KEY");
+  const pref = (Deno.env.get("ENGINE") ?? "").toLowerCase();
+  if (pref === "gemini" && gm) return { name: "gemini", call: (i) => callGemini(i, gm) };
+  if (pref === "upstage" && up) return { name: "upstage", call: (i) => callUpstage(i, up) };
+  if (up) return { name: "upstage", call: (i) => callUpstage(i, up) };
+  if (gm) return { name: "gemini", call: (i) => callGemini(i, gm) };
+  return null;
+}
+
+// 판독 결과 → 앱이 쓰는 형식
 function toApp(x: Record<string, any>) {
   const num = (v: unknown) => { const n = Number(String(v ?? "").replace(/[^\d.]/g, "")); return isFinite(n) ? n : 0; };
   const type = ["shop", "office", "house", "land", "etc"].includes(x.property_type) ? x.property_type : "etc";
@@ -117,11 +160,11 @@ Deno.serve(async (req) => {
   const origin = req.headers.get("Origin") ?? "";
   const c = corsHeaders(origin);
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: c.headers });
-  if (req.method === "GET") return json({ ok: true, service: "rentkeeper-extract", engine: "upstage-information-extract" }, 200, c.headers);
+  if (req.method === "GET") return json({ ok: true, service: "rentkeeper-extract", engine: pickEngine()?.name ?? "none" }, 200, c.headers);
   if (req.method !== "POST") return json({ error: "POST만 지원합니다" }, 405, c.headers);
   if (!c.ok) return json({ error: "허용되지 않은 출처입니다" }, 403, c.headers);
-  const key = Deno.env.get("UPSTAGE_API_KEY");
-  if (!key) return json({ error: "서버에 UPSTAGE_API_KEY가 설정되지 않았습니다" }, 500, c.headers);
+  const engine = pickEngine();
+  if (!engine) return json({ error: "서버에 판독 키(GEMINI_API_KEY 또는 UPSTAGE_API_KEY)가 설정되지 않았습니다" }, 500, c.headers);
 
   let body: any;
   try { body = await req.json(); } catch { return json({ error: "요청 형식 오류" }, 400, c.headers); }
@@ -136,17 +179,17 @@ Deno.serve(async (req) => {
 
   try {
     let raw: Record<string, any>;
-    try { raw = await callUpstage(images, key); }
+    try { raw = await engine.call(images); }
     catch (e) {
       // 여러 장을 한 번에 받지 못하는 경우: 장별로 읽어 첫 유효값으로 합침
       if (images.length > 1) {
-        const parts = await Promise.all(images.map((u) => callUpstage([u], key).catch(() => ({}))));
+        const parts = await Promise.all(images.map((u) => engine.call([u]).catch(() => ({}))));
         raw = {};
         for (const p of parts) for (const [k, v] of Object.entries(p)) if (raw[k] == null || raw[k] === "" || raw[k] === 0) raw[k] = v;
         if (!Object.keys(raw).length) throw e;
       } else throw e;
     }
-    return json({ ok: true, data: toApp(raw), engine: "upstage" }, 200, c.headers);
+    return json({ ok: true, data: toApp(raw), engine: engine.name }, 200, c.headers);
   } catch (e) {
     return json({ error: (e as Error).message || "판독 실패" }, 502, c.headers);
   }
