@@ -1,0 +1,4 @@
+# Supabase 프로젝트 설정 (CLI 사용 시). 대시보드에서 배포하면 이 파일은 없어도 됩니다.
+[functions.extract-contract]
+# 1단계(로그인 없음)에서는 누구나 호출 가능. 로그인 도입 후 true로 바꾸면 로그인 사용자만 호출됩니다.
+verify_jwt = false
