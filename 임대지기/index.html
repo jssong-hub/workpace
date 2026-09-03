@@ -229,7 +229,7 @@ let S = load();
 let ui = { tab:'home', sub:{}, chartMode:'month', taxTab:'invoice', invYM: ymOf(today()), thread:null, detail:null };
 let CAP = { sample:null, db:null, downloads:null, images:false };
 /* 계약서 판독 서버 주소 (운영자가 한 번 설정; 사용자는 설정할 것이 없음). server/README.md 참고 */
-const EXTRACT_SERVER = '';
+const EXTRACT_SERVER = 'https://lezpolceeqhdsgekidzi.supabase.co/functions/v1/extract-contract';
 
 function defaults(){
   const y = today().getFullYear();
