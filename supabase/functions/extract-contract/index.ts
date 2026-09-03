@@ -6,7 +6,7 @@
 //
 // 비밀값(Edge Functions → Secrets):
 //   GEMINI_API_KEY    (데모)  https://aistudio.google.com 에서 발급
-//   GEMINI_MODEL      (선택)  기본 gemini-2.5-flash
+//   GEMINI_MODEL      (선택)  기본 gemini-3.6-flash (모델이 단종되면 Google 안내 모델로 자동 재시도)
 //   UPSTAGE_API_KEY   (실서비스)  https://console.upstage.ai 에서 발급
 //   UPSTAGE_ENDPOINT  (선택)  기본 https://api.upstage.ai/v1/information-extraction/chat/completions
 //   ENGINE            (선택)  gemini | upstage
@@ -95,8 +95,8 @@ async function callUpstage(images: string[], key: string) {
 const GEMINI_PROMPT = `당신은 한국 부동산 임대차계약서 검토 보조원입니다. 첨부된 계약서 사진(들)을 읽고, 아래 JSON 스키마의 필드를 채운 JSON만 출력하세요(설명·코드블록 금지). 금액은 "金 삼천만 원정"처럼 한글·한자로 적혀 있어도 원 단위 정수로 환산하고, 읽을 수 없는 값은 null 또는 빈 문자열로 두세요.
 스키마: ` + JSON.stringify(SCHEMA);
 
-async function callGemini(images: string[], key: string) {
-  const model = Deno.env.get("GEMINI_MODEL") ?? "gemini-2.5-flash";
+async function callGemini(images: string[], key: string, modelOverride?: string) {
+  const model = modelOverride ?? Deno.env.get("GEMINI_MODEL") ?? "gemini-3.6-flash";
   const parts: any[] = images.map((u) => { const m = /^data:(image\/[a-z+]+);base64,(.+)$/i.exec(u)!; return { inline_data: { mime_type: m[1], data: m[2] } }; });
   parts.push({ text: GEMINI_PROMPT });
   for (let attempt = 0; attempt < 4; attempt++) {
@@ -111,7 +111,14 @@ async function callGemini(images: string[], key: string) {
       continue;
     }
     const j = await r.json();
-    if (!r.ok) throw new Error(j?.error?.message ?? `판독 서비스 오류 ${r.status}`);
+    if (!r.ok) {
+      const msg: string = j?.error?.message ?? `판독 서비스 오류 ${r.status}`;
+      // 모델 단종 안내("Please update your code to use models/xxx")가 오면 그 모델로 한 번 자동 재시도
+      const sug = /models\/([a-z0-9.\-]+)/gi; let last: string | null = null, mm: RegExpExecArray | null;
+      while ((mm = sug.exec(msg))) if (mm[1] !== model) last = mm[1];
+      if (!modelOverride && last && /no longer available|not found|deprecated|update your code/i.test(msg)) return callGemini(images, key, last);
+      throw new Error(msg);
+    }
     const text = (j?.candidates?.[0]?.content?.parts ?? []).map((p: any) => p.text ?? "").join("");
     const m = String(text).match(/\{[\s\S]*\}/);
     return JSON.parse(m ? m[0] : text);

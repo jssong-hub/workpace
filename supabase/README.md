@@ -70,7 +70,7 @@ const EXTRACT_SERVER = 'https://<프로젝트ID>.supabase.co/functions/v1/extrac
 
 - **허용되지 않은 출처입니다** → `ALLOWED_ORIGINS` 값을 `https://jssong-hub.github.io`(끝 `/` 없이)로. 테스트 중엔 비워도 됨
 - **서버에 판독 키가 설정되지 않았습니다** → Secrets 저장 후 함수를 다시 Deploy
-- **무료 사용량을 잠시 초과했습니다** → Gemini 무료 티어 분당 한도. 1분 후 재시도. `GEMINI_MODEL`을 `gemini-2.0-flash`로 바꾸면 한도가 다름
+- **무료 사용량을 잠시 초과했습니다** → Gemini 무료 티어 분당 한도. 1분 후 재시도. `GEMINI_MODEL` 비밀값으로 모델을 바꿀 수 있음(기본 gemini-3.6-flash)
 - **401 Unauthorized** → 3-4의 JWT 검증이 켜져 있음. 끄기
 - **판독 서비스가 혼잡합니다** → Upstage 초당 한도. 자동 재시도 후에도 실패한 경우. 사용량이 늘면 Upstage Tier 상향
 - **무료 프로젝트가 잠들었다(paused)** → Supabase 대시보드에서 Restore. 7일 미접속 시 발생. 실서비스는 Pro 플랜
