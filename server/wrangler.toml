@@ -1,0 +1,8 @@
+name = "rentkeeper-extract"
+main = "worker.js"
+compatibility_date = "2025-01-01"
+
+[vars]
+GEMINI_MODEL = "gemini-2.5-flash"
+# ALLOWED_ORIGINS = "https://jssong-hub.github.io"
+# 비밀값은 대시보드 또는 `npx wrangler secret put GEMINI_API_KEY` 로 넣습니다.
