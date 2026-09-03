@@ -552,7 +552,7 @@ function openAdd(){
   sheet(`<h2>계약 추가</h2>
   <div class="card" style="padding:18px 16px">
     <div style="font-size:15px;font-weight:600">임대차계약서 사진으로 등록</div>
-    <div class="meta" style="margin:4px 0 12px">${extractMode()==='ocr' ? '촬영하면 기기 안에서 글자를 인식해 보증금·임대료·면적·기간 등을 자동으로 채웁니다. (설정에서 AI 판독 키를 넣으면 정확도가 크게 올라갑니다)' : 'AI가 계약서를 읽어 등록 양식을 채우고 위험 조항을 검토합니다.'}</div>
+    <div class="meta" style="margin:4px 0 12px">${extractMode()==='ocr' ? '촬영하면 기기 안에서 글자를 인식해 보증금·임대료·면적·기간 등을 자동으로 채웁니다. (설정에서 판독 서버 주소를 넣으면 AI가 읽어 정확도가 크게 올라갑니다) <a href="#" onclick="closeSheet();openSettings(\'ai\');return false">설정 열기</a>' : 'AI가 계약서를 읽어 등록 양식을 채우고 위험 조항을 검토합니다.'}</div>
     <input type="file" id="photoCam" accept="image/*" capture="environment" hidden>
     <input type="file" id="photoLib" accept="image/*" multiple hidden>
     <div class="row2">
@@ -577,7 +577,17 @@ const EXTRACT_PROMPT = `당신은 한국 부동산 임대차계약서 검토 보
 {"name":"물건 짧은 이름(예: 테헤란로 상가 101호)","type":"shop|office|house|land|etc","addr":"소재지","area":숫자(㎡, 모르면 null),"tenant":"임차인 성명/상호","tenantPhone":"임차인 연락처 또는 빈문자열","tenantBiz":"임차인 사업자등록번호 또는 빈문자열","tenantBizName":"임차인 상호 또는 빈문자열","deposit":숫자(원),"rent":숫자(원, 월 임대료 공급가액),"mgmt":숫자(원, 관리비, 없으면 0),"vatSeparate":true|false(부가세 별도 명시 여부),"payDay":숫자(매월 납부일),"start":"YYYY-MM-DD","end":"YYYY-MM-DD","memo":"특약사항 요약(200자 이내)",
 "review":[{"level":"ok|warn|bad","item":"점검 항목","detail":"근거/제안 (60자 이내)"}]}
 review에는 최소 6개 항목: 당사자·물건 특정, 기간·갱신 조항, 보증금·임대료·납부일 명확성, 부가세 별도 표기(상가/사무실), 연체이자·해지 조건, 원상복구·수선 의무, 임대차 신고/확정일자(주택), 특약 위험요소. 읽을 수 없는 값은 null 또는 빈문자열로 두세요.`;
-function extractMode(){ return CAP.images ? 'viewer' : (S.settings.apiKey ? 'api' : 'ocr'); }
+function extractMode(){ return CAP.images ? 'viewer' : (S.settings.serverUrl ? 'server' : (S.settings.apiKey ? 'api' : 'ocr')); }
+async function extractViaServer(){
+  const url = S.settings.serverUrl.replace(/\/+$/,'');
+  const headers = { 'content-type':'application/json' }; if (S.settings.serverToken) headers['x-app-token'] = S.settings.serverToken;
+  let r, j;
+  try { r = await fetch(url + '/', { method:'POST', headers, body: JSON.stringify({ images: PH }) }); }
+  catch(e){ throw new Error('판독 서버에 연결할 수 없습니다. 설정의 서버 주소를 확인하세요'); }
+  try { j = await r.json(); } catch(e){ throw new Error(`서버 응답 오류 (${r.status})`); }
+  if (!r.ok || !j.ok) throw new Error(j.error || `서버 오류 ${r.status}`);
+  return j.data;
+}
 function parseJsonLoose(txt){ const m = String(txt).trim().match(/\{[\s\S]*\}/); return JSON.parse(m ? m[0] : txt); }
 async function extractViaViewer(){
   const files = await Promise.all(PH.map(async (u,i) => { const b = await (await fetch(u)).blob(); return new File([b], `contract_${i+1}.jpg`, { type:'image/jpeg' }); }));
@@ -688,7 +698,7 @@ async function analyzeContract(){
   const st = $('#aiStatus'); const mode = extractMode();
   st.innerHTML = '<span class="spin"></span> ' + (mode==='ocr' ? '기기에서 계약서 글자를 인식합니다…' : 'AI가 계약서를 읽고 있습니다… (10~40초)');
   try {
-    const data = mode==='viewer' ? await extractViaViewer() : mode==='api' ? await extractViaApi() : await extractViaOcr(st);
+    const data = mode==='viewer' ? await extractViaViewer() : mode==='server' ? await extractViaServer() : mode==='api' ? await extractViaApi() : await extractViaOcr(st);
     data.photos = PH.slice();
     const complete = data.rent && data.start && data.end;
     if (S.settings.autoRegister !== false && complete){
@@ -951,9 +961,15 @@ function openSettings(focus){
     <div class="row2"><div><label class="f">미입금 기본 재알림(일)</label><input id="t_remind" type="number" value="${T.remindDays}"></div><div><label class="f">간주임대료 이자율(%)</label><input id="t_rate" type="number" step="0.1" value="${T.deemedRate}"></div></div>
     <div class="note">간주임대료 이자율은 매년 국세청 고시(부가가치세법 시행규칙)로 바뀝니다. 신고 전 확인 후 갱신하세요.</div></details>
   <details class="acc" ${focus==='ai'?'open':''}><summary>계약서 자동 판독 (AI)</summary>
-    <div class="note" style="margin-top:0">키가 없으면 기기 안에서 글자 인식(OCR)으로 자동 입력합니다. 인쇄된 계약서는 대체로 읽히지만 손글씨·흐린 사진은 정확도가 떨어집니다. Anthropic API 키를 넣으면 AI가 사진을 직접 읽어 정확도가 크게 올라가고 위험 조항 검토도 함께 제공됩니다. 키는 이 기기 브라우저에만 저장되며 호출 비용은 키 소유자에게 청구됩니다.</div>
-    <label class="f">Anthropic API 키 (sk-ant-…)</label><input id="t_apikey" type="password" autocomplete="off" value="${esc(T.apiKey||'')}" placeholder="비워두면 기기 내 OCR 사용">
-    <label class="f">모델</label><input id="t_apimodel" value="${esc(T.apiModel||'claude-sonnet-4-5')}">
+    <div class="note" style="margin-top:0"><b>판독 서버 주소</b>를 넣으면 사진을 서버(Cloudflare Workers, 무료)로 보내 AI가 읽습니다. 키가 폰에 남지 않아 권장 방식입니다. 서버 만드는 방법은 저장소의 <code>server/README.md</code>를 보세요. 서버 주소가 없으면 기기 내 문자 인식(OCR)으로 대신합니다.</div>
+    <label class="f">판독 서버 주소 (https://….workers.dev)</label><input id="t_server" type="url" autocomplete="off" value="${esc(T.serverUrl||'')}" placeholder="https://rentkeeper-extract.xxxx.workers.dev">
+    <label class="f">서버 비밀번호 (서버에 APP_TOKEN을 설정한 경우만)</label><input id="t_servertoken" type="password" autocomplete="off" value="${esc(T.serverToken||'')}">
+    <div class="btns"><button class="btn sm" type="button" onclick="testServer()">서버 연결 확인</button><span id="t_serverstat" class="meta"></span></div>
+    <details class="acc" style="margin-top:8px"><summary style="font-size:13px">고급: 서버 없이 Anthropic API 키 직접 사용</summary>
+      <div class="note" style="margin-top:0">키가 이 기기 브라우저에 저장되고 호출 비용이 키 소유자에게 청구됩니다. 판독 서버 주소가 비어 있을 때만 사용됩니다.</div>
+      <label class="f">Anthropic API 키</label><input id="t_apikey" type="password" autocomplete="off" value="${esc(T.apiKey||'')}">
+      <label class="f">모델</label><input id="t_apimodel" value="${esc(T.apiModel||'claude-sonnet-4-5')}">
+    </details>
   </details>
   <details class="acc"><summary>데이터 · 동기화</summary>
     <label class="tw" style="display:flex;padding:8px 0"><input type="checkbox" id="t_cloud" ${T.cloudSync?'checked':''} ${CAP.db?'':'disabled'}> 클라우드 동기화 ${CAP.db?'(이 조직 내 기기 간 공유)':'(로그인 뷰어에서만 가능)'}</label>
@@ -967,8 +983,10 @@ function saveSettings(){ const g = id => $('#'+id).value.trim();
   Object.assign(S.landlord, { name:g('l_name'), phone:g('l_phone'), bizName:g('l_bizName'), bizNo:g('l_bizNo'), addr:g('l_addr'), email:g('l_email') });
   Object.assign(S.taxAgent, { name:g('a_name'), office:g('a_office'), email:g('a_email'), phone:g('a_phone') });
   Object.assign(S.broker, { office:g('b_office'), name:g('b_name'), phone:g('b_phone') });
-  S.settings.remindDays = Number(g('t_remind')||3); S.settings.deemedRate = Number(g('t_rate')||3.1); S.settings.cloudSync = $('#t_cloud').checked; S.settings.apiKey = g('t_apikey'); S.settings.apiModel = g('t_apimodel') || 'claude-sonnet-4-5';
+  S.settings.remindDays = Number(g('t_remind')||3); S.settings.deemedRate = Number(g('t_rate')||3.1); S.settings.cloudSync = $('#t_cloud').checked; S.settings.apiKey = g('t_apikey'); S.settings.apiModel = g('t_apimodel') || 'claude-sonnet-4-5'; S.settings.serverUrl = g('t_server').replace(/\/+$/,''); S.settings.serverToken = g('t_servertoken');
   save(); closeSheet(); render(); toast('설정을 저장했습니다'); }
+async function testServer(){ const u = $('#t_server').value.trim().replace(/\/+$/,''); const el = $('#t_serverstat'); if (!u) return el.textContent = '주소를 입력하세요'; el.innerHTML = '<span class="spin"></span>';
+  try { const r = await fetch(u + '/'); const j = await r.json(); el.textContent = j.ok ? `연결됨 · ${j.model}` : '응답이 올바르지 않습니다'; } catch(e){ el.textContent = '연결 실패: 주소를 확인하세요'; } }
 function restoreFile(f){ if(!f) return; const r = new FileReader(); r.onload = () => { try { S = Object.assign(defaults(), JSON.parse(r.result)); save(); closeSheet(); render(); toast('복원했습니다'); } catch(e){ toast('파일을 읽을 수 없습니다'); } }; r.readAsText(f); }
 
 /* ---------- 공통 UI ---------- */
