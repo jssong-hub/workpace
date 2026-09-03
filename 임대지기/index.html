@@ -417,7 +417,7 @@ function renderHome(v){
     <div class="kpi ${unpaid?'bad':''}"><div class="l">미입금</div><div class="v num">${manwon(unpaid)}</div></div>
     <div class="kpi"><div class="l">${t.getFullYear()}년 누적 수납</div><div class="v num">${manwon(yearPaid)}</div></div>
   </div>
-  <div class="btns" style="margin-top:12px"><button class="btn acc" onclick="openAdd()">📷 계약서 촬영해서 등록</button><button class="btn" onclick="go('contracts')">계약 목록 보기</button></div>
+  <div class="btns" style="margin-top:12px"><button class="btn acc" onclick="openAdd()">📝 계약서로 자동 등록</button><button class="btn" onclick="go('contracts')">계약 목록 보기</button></div>
   <h2 class="sec">확인이 필요한 일 <button class="r" onclick="go('alerts')">전체 보기</button></h2>
   <div class="card">${todo.length ? todo.map(notifItem).join('') : '<div class="empty">지금 확인할 일이 없습니다 🙂</div>'}</div>
   <h2 class="sec">수납 추이 <span class="r"><span class="seg" id="chartSeg">${['month','quarter','year'].map(m=>`<button class="${ui.chartMode===m?'on':''}" onclick="ui.chartMode='${m}';render()">${{month:'월간',quarter:'분기',year:'연간'}[m]}</button>`).join('')}</span></span></h2>
@@ -503,8 +503,8 @@ function renderContracts(v){
   ${S.contracts.map(c => { const d = daysBetween(t, parseD(c.end)); const st = rentState(c, ymOf(t)); const exp = d<0?'<span class="pill bad">만료</span>':d<=90?`<span class="pill warn">만료 ${d}일 전</span>`:'<span class="pill ok">진행 중</span>';
     return `<div class="card" onclick="openDetail('${c.id}')" style="cursor:pointer"><div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><div><h3>${esc(c.name)}</h3><div class="meta">${TYPES[c.type]} · ${c.area||'-'}㎡ · ${esc(c.addr)}</div></div>${exp}</div>
     <div class="grid3" style="margin-top:10px"><div class="mini"><div class="l">보증금</div><div class="v num">${manwon(c.deposit)}</div></div><div class="mini"><div class="l">월 임대료${c.vatSeparate&&TAXABLE(c.type)?' (VAT별도)':''}</div><div class="v num">${manwon(c.rent)}</div></div><div class="mini"><div class="l">이번 달</div><div class="v"><span class="pill ${st.cls}">${st.label}</span></div></div></div>
-    <div class="meta" style="margin-top:8px">임차인 ${esc(c.tenant)} · ${fmtD(c.start)} ~ ${fmtD(c.end)} · 매월 ${c.payDay}일</div></div>`; }).join('') || '<div class="card"><div class="empty">아직 계약이 없습니다.<br>아래 버튼으로 계약서 사진을 올리거나 직접 입력하세요.</div></div>'}
-  <h2 class="sec">계약서 검토 기준</h2><div class="card note" style="margin-top:0">사진을 올리면 AI가 계약 당사자·기간·보증금·임대료·납부일·특약을 읽어 등록 양식을 채우고, 누락 항목과 위험 조항(부가세 별도 표기, 원상복구, 갱신 조건, 연체이자, 임대차 신고 의무 등)을 체크리스트로 알려줍니다. 결과는 참고용이며 최종 판단은 임대인·전문가가 합니다.</div>`;
+    <div class="meta" style="margin-top:8px">임차인 ${esc(c.tenant)} · ${fmtD(c.start)} ~ ${fmtD(c.end)} · 매월 ${c.payDay}일</div></div>`; }).join('') || '<div class="card"><div class="empty">아직 계약이 없습니다.<br>아래 버튼으로 계약서 글자를 붙여 넣거나 직접 입력하세요.</div></div>'}
+  <h2 class="sec">계약서 검토 기준</h2><div class="card note" style="margin-top:0">스마트폰 카메라의 글자 인식으로 계약서 글자를 복사해 붙이면 계약 당사자·기간·보증금·임대료·납부일·특약을 읽어 임대현황에 자동 등록하고, 누락 항목과 위험 조항(부가세 별도 표기, 원상복구, 갱신 조건, 연체이자 등)을 점검표로 알려줍니다. 결과는 참고용이며 최종 판단은 임대인·전문가가 합니다.</div>`;
   const fab = document.createElement('button'); fab.className='fab'; fab.textContent='＋ 계약 추가'; fab.onclick = openAdd; document.body.appendChild(fab);
 }
 /* ---------- 계약서 사진 촬영·보관 ---------- */
@@ -536,7 +536,8 @@ function photoStrip(list, removable){
 function renderPhotoStrip(){
   const box = $('#photoBox'); if (!box) return;
   box.innerHTML = photoStrip(PH, true);
-  const n = $('#photoNext'); if (n) n.hidden = !PH.length;
+  const n = $('#photoNext'); if (n) n.hidden = !PH.length || !CAP.images;
+  const dbtn = $('#sheet > .btns .btn.w'); if (dbtn && /직접 입력하기/.test(dbtn.textContent)) dbtn.textContent = '직접 입력하기' + (PH.length ? ' (사진 첨부)' : '');
   const cnt = $('#photoCnt'); if (cnt) cnt.textContent = PH.length ? `${PH.length}장 선택됨` : '';
 }
 function viewPhoto(list, i){
@@ -550,72 +551,38 @@ function viewPhoto(list, i){
 function openAdd(){
   PH = [];
   sheet(`<h2>계약 추가</h2>
-  <div class="card" style="padding:18px 16px">
-    <div style="font-size:15px;font-weight:600">임대차계약서 사진으로 등록</div>
-    <div class="meta" style="margin:4px 0 12px">${extractMode()==='ocr' ? '촬영하면 기기 안에서 글자를 인식해 보증금·임대료·면적·기간 등을 자동으로 채웁니다. (설정에서 판독 서버 주소를 넣으면 AI가 읽어 정확도가 크게 올라갑니다) <a href="#" onclick="closeSheet();openSettings(\'ai\');return false">설정 열기</a>' : 'AI가 계약서를 읽어 등록 양식을 채우고 위험 조항을 검토합니다.'}</div>
+  <div class="card" style="padding:16px">
+    <div style="font-size:15px;font-weight:600">① 계약서 글자 붙여넣기 → 자동 입력</div>
+    <div class="meta" style="margin:4px 0 0">스마트폰에 내장된 글자 인식으로 계약서 글자를 복사해 붙이면 보증금·임대료·면적·기간·임차인 등이 자동으로 채워집니다.</div>
+    ${pasteHelp()}
+    <textarea id="ctext" style="min-height:150px;margin-top:10px;font-size:13.5px" placeholder="여기에 계약서 글자를 붙여 넣으세요 (여러 장이면 이어서 붙여도 됩니다)" oninput="textChanged()"></textarea>
+    <div class="row2" style="margin-top:8px"><button class="btn" type="button" onclick="pasteFromClipboard()">📋 클립보드에서 붙여넣기</button><button class="btn" type="button" onclick="$('#ctext').value='';textChanged()">지우기</button></div>
+    <div class="meta" id="textCnt" style="text-align:center;margin:6px 0"></div>
+    <label class="tw" style="margin:6px 0 10px;font-size:13px"><input type="checkbox" id="autoReg" ${S.settings.autoRegister!==false?'checked':''} onchange="S.settings.autoRegister=this.checked;save()"> 읽는 즉시 임대현황에 자동 등록 (나중에 수정 가능)</label>
+    <button class="btn p w" id="textNext" type="button" disabled onclick="analyzeContract()">🔎 글자 읽어서 자동 입력</button>
+    <div id="aiStatus" class="note" style="text-align:center"></div>
+  </div>
+  <div class="card" style="padding:16px;margin-top:10px">
+    <div style="font-size:15px;font-weight:600">② 계약서 사진 (보관용, 선택)</div>
+    <div class="meta" style="margin:4px 0 10px">촬영해 두면 계약 정보와 함께 보관되어 언제든 다시 볼 수 있습니다. 위에서 글자를 읽을 때 함께 첨부됩니다.</div>
     <input type="file" id="photoCam" accept="image/*" capture="environment" hidden>
     <input type="file" id="photoLib" accept="image/*" multiple hidden>
     <div class="row2">
       <button class="btn acc" type="button" onclick="$('#photoCam').click()">📷 카메라로 촬영</button>
       <button class="btn" type="button" onclick="$('#photoLib').click()">🖼 앨범에서 선택</button>
     </div>
-    <div id="photoBox"></div>
-    <div id="aiStatus" class="note" style="text-align:center"></div>
-    <div id="photoNext" hidden>
-      <div class="meta" id="photoCnt" style="text-align:center;margin:6px 0"></div>
-      <label class="tw" style="margin:6px 0 10px;font-size:13px"><input type="checkbox" id="autoReg" ${S.settings.autoRegister!==false?'checked':''} onchange="S.settings.autoRegister=this.checked;save()"> 판독 즉시 임대현황에 자동 등록 (나중에 수정 가능)</label>
-      <button class="btn p w" type="button" onclick="analyzeContract()">${extractMode()==='ocr'?'🔎 자동 인식해서 등록':'🤖 AI로 판독해서 등록'}</button>
-      <button class="btn w" type="button" style="margin-top:8px" onclick="openForm(null, { photos: PH.slice() })">✍️ 사진만 첨부하고 직접 입력</button>
-    </div>
+    <div id="photoBox"></div><div class="meta" id="photoCnt" style="text-align:center;margin:6px 0"></div>
+    <div id="photoNext" hidden>${CAP.images ? `<button class="btn p w" type="button" onclick="analyzeContract()">🤖 AI로 사진 판독해서 등록</button>` : ''}</div>
   </div>
-  <div class="btns"><button class="btn w" type="button" onclick="openForm()">사진 없이 직접 입력하기</button></div>`);
+  <div class="btns"><button class="btn w" type="button" onclick="openForm(null, PH.length ? { photos: PH.slice() } : undefined)">직접 입력하기</button></div>`);
   $('#photoCam').onchange = e => { addPhotos(e.target.files); e.target.value = ''; };
   $('#photoLib').onchange = e => { addPhotos(e.target.files); e.target.value = ''; };
 }
-/* ---------- 계약서 자동 판독: ① claude.ai 뷰어 → ② Anthropic API(키 설정 시) → ③ 기기 내 OCR(Tesseract) ---------- */
+/* ---------- 계약서 자동 입력: 폰 내장 글자 인식으로 복사한 텍스트 해석 (claude.ai 뷰어에서는 사진 AI 판독) ---------- */
 const EXTRACT_PROMPT = `당신은 한국 부동산 임대차계약서 검토 보조원입니다. 첨부된 계약서 사진(들)을 읽고 아래 JSON만 출력하세요(설명 금지, 코드블록 금지).
 {"name":"물건 짧은 이름(예: 테헤란로 상가 101호)","type":"shop|office|house|land|etc","addr":"소재지","area":숫자(㎡, 모르면 null),"tenant":"임차인 성명/상호","tenantPhone":"임차인 연락처 또는 빈문자열","tenantBiz":"임차인 사업자등록번호 또는 빈문자열","tenantBizName":"임차인 상호 또는 빈문자열","deposit":숫자(원),"rent":숫자(원, 월 임대료 공급가액),"mgmt":숫자(원, 관리비, 없으면 0),"vatSeparate":true|false(부가세 별도 명시 여부),"payDay":숫자(매월 납부일),"start":"YYYY-MM-DD","end":"YYYY-MM-DD","memo":"특약사항 요약(200자 이내)",
 "review":[{"level":"ok|warn|bad","item":"점검 항목","detail":"근거/제안 (60자 이내)"}]}
 review에는 최소 6개 항목: 당사자·물건 특정, 기간·갱신 조항, 보증금·임대료·납부일 명확성, 부가세 별도 표기(상가/사무실), 연체이자·해지 조건, 원상복구·수선 의무, 임대차 신고/확정일자(주택), 특약 위험요소. 읽을 수 없는 값은 null 또는 빈문자열로 두세요.`;
-function extractMode(){ return CAP.images ? 'viewer' : (S.settings.serverUrl ? 'server' : (S.settings.apiKey ? 'api' : 'ocr')); }
-async function extractViaServer(){
-  const url = S.settings.serverUrl.replace(/\/+$/,'');
-  const headers = { 'content-type':'application/json' }; if (S.settings.serverToken) headers['x-app-token'] = S.settings.serverToken;
-  let r, j;
-  try { r = await fetch(url + '/', { method:'POST', headers, body: JSON.stringify({ images: PH }) }); }
-  catch(e){ throw new Error('판독 서버에 연결할 수 없습니다. 설정의 서버 주소를 확인하세요'); }
-  try { j = await r.json(); } catch(e){ throw new Error(`서버 응답 오류 (${r.status})`); }
-  if (!r.ok || !j.ok) throw new Error(j.error || `서버 오류 ${r.status}`);
-  return j.data;
-}
-function parseJsonLoose(txt){ const m = String(txt).trim().match(/\{[\s\S]*\}/); return JSON.parse(m ? m[0] : txt); }
-async function extractViaViewer(){
-  const files = await Promise.all(PH.map(async (u,i) => { const b = await (await fetch(u)).blob(); return new File([b], `contract_${i+1}.jpg`, { type:'image/jpeg' }); }));
-  const res = await CAP.sample(EXTRACT_PROMPT, { images: files.length===1?files[0]:files, modelTier:'complex' });
-  return parseJsonLoose(res.text);
-}
-async function extractViaApi(){
-  const content = PH.map(u => ({ type:'image', source:{ type:'base64', media_type:'image/jpeg', data:u.split(',')[1] } }));
-  content.push({ type:'text', text: EXTRACT_PROMPT });
-  const r = await fetch('https://api.anthropic.com/v1/messages', { method:'POST', headers:{ 'content-type':'application/json', 'x-api-key':S.settings.apiKey, 'anthropic-version':'2023-06-01', 'anthropic-dangerous-direct-browser-access':'true' },
-    body: JSON.stringify({ model: S.settings.apiModel || 'claude-sonnet-4-5', max_tokens: 1500, messages:[{ role:'user', content }] }) });
-  const j = await r.json();
-  if (!r.ok) throw new Error(j?.error?.message || `API 오류 ${r.status}`);
-  return parseJsonLoose((j.content||[]).map(c=>c.text||'').join(''));
-}
-let _tess = null;
-async function loadTesseract(st){
-  if (window.Tesseract) return;
-  if (st) st.innerHTML = '<span class="spin"></span> 문자 인식 엔진을 내려받고 있습니다… (처음 한 번, 수 MB)';
-  await new Promise((ok, no) => { const sc = document.createElement('script'); sc.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'; sc.onload = ok; sc.onerror = () => no(new Error('OCR 엔진을 내려받지 못했습니다(네트워크 확인)')); document.head.appendChild(sc); });
-}
-async function extractViaOcr(st){
-  await loadTesseract(st);
-  if (!_tess) _tess = await Tesseract.createWorker(['kor','eng'], 1, { logger: m => { if (st && m.status==='recognizing text') st.innerHTML = `<span class="spin"></span> 글자를 읽고 있습니다… ${Math.round((m.progress||0)*100)}%`; else if (st && /loading|initializ/i.test(m.status||'')) st.innerHTML = '<span class="spin"></span> 한국어 인식 데이터 준비 중…'; } });
-  let text = '';
-  for (let i=0;i<PH.length;i++){ if (st) st.innerHTML = `<span class="spin"></span> ${i+1}/${PH.length}번째 사진 인식 중…`; const r = await _tess.recognize(PH[i]); text += '\n' + r.data.text; }
-  const data = parseContractText(text); data._ocr = true; data._raw = text; return data;
-}
 /* 한글 금액 → 숫자 (일억오천만원, 金 삼천만 원정, 1억 5,000만원 등) */
 function koreanNumber(str){
   if (!str) return null; let t = String(str).replace(/^\s*금\s*/,'').replace(/[\s,金원정₩\(\)]/g,'');
@@ -693,22 +660,46 @@ function parseContractText(raw){
   ];
   return d;
 }
+function extractMode(){ return CAP.images ? 'viewer' : 'text'; }
+function parseJsonLoose(txt){ const m = String(txt).trim().match(/\{[\s\S]*\}/); return JSON.parse(m ? m[0] : txt); }
+async function extractViaViewer(){
+  const files = await Promise.all(PH.map(async (u,i) => { const b = await (await fetch(u)).blob(); return new File([b], `contract_${i+1}.jpg`, { type:'image/jpeg' }); }));
+  const res = await CAP.sample(EXTRACT_PROMPT, { images: files.length===1?files[0]:files, modelTier:'complex' });
+  return parseJsonLoose(res.text);
+}
+function pasteHelp(){
+  const ua = navigator.userAgent; const ios = /iPhone|iPad/.test(ua); const galaxy = /SM-|Samsung/i.test(ua);
+  const tip = ios ? '<b>아이폰</b>: 카메라 앱으로 계약서를 비추고 오른쪽 아래 <b>글자 인식 아이콘</b>을 누른 뒤 <b>전체 선택 → 복사</b>. (사진 앱에서 촬영한 사진의 글자를 길게 눌러 선택해도 됩니다)'
+    : galaxy ? '<b>갤럭시</b>: 카메라 앱으로 비추면 나오는 <b>T 아이콘(텍스트 스캔)</b> → 전체 선택 → 복사. 또는 갤러리에서 사진을 열고 <b>텍스트 추출</b>.'
+    : '<b>안드로이드</b>: 카메라 또는 갤러리에서 <b>Google 렌즈</b> → 텍스트 → 전체 선택 → 복사.';
+  return `<div class="note" style="margin-top:6px">${tip} 그 다음 이 앱으로 돌아와 아래 칸에 붙여 넣으세요.</div>`;
+}
+async function pasteFromClipboard(){
+  try { const t = await navigator.clipboard.readText(); if (!t || !t.trim()) return toast('클립보드에 글자가 없습니다'); const ta = $('#ctext'); ta.value = (ta.value ? ta.value + '\n' : '') + t; textChanged(); toast('붙여 넣었습니다'); }
+  catch(e){ toast('붙여넣기 권한이 없습니다. 입력칸을 길게 눌러 붙여넣기 하세요'); $('#ctext').focus(); }
+}
+function textChanged(){ const t = $('#ctext').value.trim(); const btn = $('#textNext'); if (btn) btn.disabled = t.length < 20; const cnt = $('#textCnt'); if (cnt) cnt.textContent = t ? `${t.length}자 · 항목 단어 ${(t.match(/보증금|차임|월세|임대료|면적|임차인|기간/g)||[]).length}개 발견` : ''; }
 async function analyzeContract(){
-  if (!PH.length) return toast('먼저 계약서를 촬영해 주세요');
   const st = $('#aiStatus'); const mode = extractMode();
-  st.innerHTML = '<span class="spin"></span> ' + (mode==='ocr' ? '기기에서 계약서 글자를 인식합니다…' : 'AI가 계약서를 읽고 있습니다… (10~40초)');
   try {
-    const data = mode==='viewer' ? await extractViaViewer() : mode==='server' ? await extractViaServer() : mode==='api' ? await extractViaApi() : await extractViaOcr(st);
+    let data;
+    if (mode === 'viewer' && PH.length && !($('#ctext')?.value || '').trim()){ st.innerHTML = '<span class="spin"></span> AI가 계약서 사진을 읽고 있습니다… (10~40초)'; data = await extractViaViewer(); }
+    else {
+      const text = ($('#ctext')?.value || '').trim();
+      if (text.length < 20) return toast('계약서 글자를 먼저 붙여 넣어 주세요');
+      st.innerHTML = '<span class="spin"></span> 붙여 넣은 글자에서 항목을 찾고 있습니다…';
+      data = parseContractText(text); data._ocr = true; data._raw = text;
+    }
     data.photos = PH.slice();
     const complete = data.rent && data.start && data.end;
     if (S.settings.autoRegister !== false && complete){
       const c = { id:uid(), name:data.name||'이름 없는 물건', type:TYPES[data.type]?data.type:'etc', addr:data.addr||'', area:Number(data.area)||null, tenant:data.tenant||'', tenantPhone:data.tenantPhone||'', tenantBiz:data.tenantBiz||'', tenantBizName:data.tenantBizName||'', deposit:Number(data.deposit)||0, rent:Number(data.rent)||0, mgmt:Number(data.mgmt)||0, vatSeparate:!!data.vatSeparate, payDay:Math.min(31,Math.max(1,Number(data.payDay)||1)), start:data.start, end:data.end, memo:data.memo||'', review:Array.isArray(data.review)?data.review:null, quotes:[], photos:PH.slice(), autoRegistered:true, ocr:!!data._ocr };
       S.contracts.push(c); if (c.tenantPhone) S.threads.push({ id:uid(), kind:'tenant', name:`${c.tenant} (${c.name})`, phone:c.tenantPhone, contractId:c.id, messages:[] });
       S.demo = false; save(); closeSheet(); ui.detail = c.id; render();
-      toast(data._ocr ? '계약서를 인식해 등록했습니다. 금액·기간을 꼭 확인하세요.' : '계약서를 판독해 임대현황에 등록했습니다. 내용을 확인하고 필요하면 수정하세요.');
+      toast('계약서 내용을 읽어 임대현황에 등록했습니다. 금액·기간을 꼭 확인하세요.');
       return;
     }
-    st.innerHTML = `<span class="pill ${complete?'ok':'warn'}">${complete?'읽기 완료':'일부만 읽음'}</span> 읽은 값을 채운 양식이 열립니다. 확인 후 저장하세요.`;
+    st.innerHTML = `<span class="pill ${complete?'ok':'warn'}">${complete?'읽기 완료':'일부만 읽음'}</span> 읽은 값을 채운 양식이 열립니다. 빈칸을 채우고 저장하세요.`;
     setTimeout(() => openForm(null, data), 500);
   } catch (e) {
     console.warn(e); st.innerHTML = `<span class="pill bad">읽기 실패</span> ${esc(e.message||e.code||'')} · 아래 버튼으로 직접 입력을 진행해 주세요.`;
@@ -718,7 +709,7 @@ function openForm(id, pre){
   const c = id ? byId(id) : Object.assign({ id:uid(), type:'shop', vatSeparate:true, payDay:25, mgmt:0, start: ymd(today()), end: ymd(addMonths(today(),24)), quotes:[], review:null }, pre||{});
   if (pre && pre.review) c.review = pre.review;
   const f = (k,label,type='text',extra='') => `<label class="f">${label}</label><input id="f_${k}" type="${type}" value="${esc(c[k] ?? '')}" ${extra}>`;
-  sheet(`<h2>${id?'계약 수정':'계약 등록'} ${(pre&&pre.review)?`<span class="ai">${pre._ocr?'자동 인식 결과 · 확인 필요':'AI 판독 결과'}</span>`:''}</h2>
+  sheet(`<h2>${id?'계약 수정':'계약 등록'} ${(pre&&pre.review)?`<span class="ai">${pre._ocr?'자동 입력 결과 · 확인 필요':'AI 판독 결과'}</span>`:''}</h2>
   ${f('name','물건 이름')}
   <div class="row2"><div><label class="f">유형</label><select id="f_type">${Object.entries(TYPES).map(([k,v])=>`<option value="${k}" ${c.type===k?'selected':''}>${v}</option>`).join('')}</select></div><div>${f('area','전용면적(㎡)','number','step="0.1"')}</div></div>
   ${f('addr','소재지')}
@@ -735,7 +726,7 @@ function openForm(id, pre){
   <input type="file" id="photoLib" accept="image/*" multiple hidden>
   <div class="row2" style="margin-top:6px"><button class="btn sm" type="button" onclick="$('#photoCam').click()">📷 촬영 추가</button><button class="btn sm" type="button" onclick="$('#photoLib').click()">🖼 앨범 추가</button></div>
   <div id="aiStatus" class="note"></div>
-  ${c.review ? `<h2 class="sec">${c.ocr||(pre&&pre._ocr)?'자동 인식 점검표':'AI 계약서 검토 결과'}</h2><div class="card">${c.review.map(r=>`<div class="check"><div class="m ${r.level}">${r.level==='ok'?'✓':r.level==='warn'?'!':'✕'}</div><div><b>${esc(r.item)}</b><div class="meta">${esc(r.detail)}</div></div></div>`).join('')}</div>` : ''}
+  ${c.review ? `<h2 class="sec">${c.ocr||(pre&&pre._ocr)?'자동 입력 점검표':'AI 계약서 검토 결과'}</h2><div class="card">${c.review.map(r=>`<div class="check"><div class="m ${r.level}">${r.level==='ok'?'✓':r.level==='warn'?'!':'✕'}</div><div><b>${esc(r.item)}</b><div class="meta">${esc(r.detail)}</div></div></div>`).join('')}</div>` : ''}
   <div class="btns"><button class="btn p w" onclick="saveForm('${c.id}', ${!!id})">저장</button></div>`);
   window._pendingReview = c.review || null; window._pendingQuotes = c.quotes || [];
   PH = (c.photos||[]).slice(); renderPhotoStrip();
@@ -764,7 +755,7 @@ function renderDetail(v, c){
   const quotes = (c.quotes||[]).slice().sort((a,b)=>b.at.localeCompare(a.at));
   const qa = quotes.filter(q=>q.area&&q.rent); const avgPer = qa.length ? qa.reduce((a,q)=>a+q.rent/q.area,0)/qa.length : null;
   v.innerHTML = `<div class="sub-h"><button class="back" onclick="ui.detail=null;render()">‹</button><h2>${esc(c.name)}</h2><button class="btn sm" onclick="openForm('${c.id}')">수정</button></div>
-  ${c.autoRegistered?`<div class="banner"><b>${c.ocr?'자동 인식':'AI 자동 등록'}</b> 계약서 사진에서 읽은 값입니다. 금액·기간·납부일을 확인해 주세요. <button class="btn sm" onclick="byId('${c.id}').autoRegistered=false;save();render()">확인 완료</button></div>`:''}
+  ${c.autoRegistered?`<div class="banner"><b>${c.ocr?'자동 입력':'AI 자동 등록'}</b> 계약서 글자에서 읽은 값입니다. 금액·기간·납부일을 확인해 주세요. <button class="btn sm" onclick="byId('${c.id}').autoRegistered=false;save();render()">확인 완료</button></div>`:''}
   <div class="card"><div class="meta">${TYPES[c.type]} · ${c.area||'-'}㎡ · ${esc(c.addr)}</div>
     <div class="grid3" style="margin-top:10px"><div class="mini"><div class="l">보증금</div><div class="v num">${manwon(c.deposit)}</div></div><div class="mini"><div class="l">월 임대료</div><div class="v num">${manwon(c.rent)}</div></div><div class="mini"><div class="l">${TAXABLE(c.type)?'부가세':'과세구분'}</div><div class="v num">${TAXABLE(c.type)?(c.vatSeparate?won(vatOf(c)):'포함/미표기'):'면세(주택)'}</div></div></div>
     <div class="meta" style="margin-top:10px">임차인 <b>${esc(c.tenant)}</b> ${c.tenantBizName?`· ${esc(c.tenantBizName)} (${esc(c.tenantBiz)})`:''}<br>${fmtD(c.start)} ~ ${fmtD(c.end)} · 매월 ${c.payDay}일 납부 ${c.mgmt?`· 관리비 ${manwon(c.mgmt)}`:''}</div>
@@ -960,17 +951,6 @@ function openSettings(focus){
   <details class="acc"><summary>알림 · 세무 기준값</summary>
     <div class="row2"><div><label class="f">미입금 기본 재알림(일)</label><input id="t_remind" type="number" value="${T.remindDays}"></div><div><label class="f">간주임대료 이자율(%)</label><input id="t_rate" type="number" step="0.1" value="${T.deemedRate}"></div></div>
     <div class="note">간주임대료 이자율은 매년 국세청 고시(부가가치세법 시행규칙)로 바뀝니다. 신고 전 확인 후 갱신하세요.</div></details>
-  <details class="acc" ${focus==='ai'?'open':''}><summary>계약서 자동 판독 (AI)</summary>
-    <div class="note" style="margin-top:0"><b>판독 서버 주소</b>를 넣으면 사진을 서버(Cloudflare Workers, 무료)로 보내 AI가 읽습니다. 키가 폰에 남지 않아 권장 방식입니다. 서버 만드는 방법은 저장소의 <code>server/README.md</code>를 보세요. 서버 주소가 없으면 기기 내 문자 인식(OCR)으로 대신합니다.</div>
-    <label class="f">판독 서버 주소 (https://….workers.dev)</label><input id="t_server" type="url" autocomplete="off" value="${esc(T.serverUrl||'')}" placeholder="https://rentkeeper-extract.xxxx.workers.dev">
-    <label class="f">서버 비밀번호 (서버에 APP_TOKEN을 설정한 경우만)</label><input id="t_servertoken" type="password" autocomplete="off" value="${esc(T.serverToken||'')}">
-    <div class="btns"><button class="btn sm" type="button" onclick="testServer()">서버 연결 확인</button><span id="t_serverstat" class="meta"></span></div>
-    <details class="acc" style="margin-top:8px"><summary style="font-size:13px">고급: 서버 없이 Anthropic API 키 직접 사용</summary>
-      <div class="note" style="margin-top:0">키가 이 기기 브라우저에 저장되고 호출 비용이 키 소유자에게 청구됩니다. 판독 서버 주소가 비어 있을 때만 사용됩니다.</div>
-      <label class="f">Anthropic API 키</label><input id="t_apikey" type="password" autocomplete="off" value="${esc(T.apiKey||'')}">
-      <label class="f">모델</label><input id="t_apimodel" value="${esc(T.apiModel||'claude-sonnet-4-5')}">
-    </details>
-  </details>
   <details class="acc"><summary>데이터 · 동기화</summary>
     <label class="tw" style="display:flex;padding:8px 0"><input type="checkbox" id="t_cloud" ${T.cloudSync?'checked':''} ${CAP.db?'':'disabled'}> 클라우드 동기화 ${CAP.db?'(이 조직 내 기기 간 공유)':'(로그인 뷰어에서만 가능)'}</label>
     <div class="btns"><button class="btn" onclick="saveFile('임대지기_백업_${ymd(today())}.json', JSON.stringify(S,null,2))">백업 내려받기</button><button class="btn" onclick="$('#restore').click()">백업 복원</button></div>
@@ -983,10 +963,8 @@ function saveSettings(){ const g = id => $('#'+id).value.trim();
   Object.assign(S.landlord, { name:g('l_name'), phone:g('l_phone'), bizName:g('l_bizName'), bizNo:g('l_bizNo'), addr:g('l_addr'), email:g('l_email') });
   Object.assign(S.taxAgent, { name:g('a_name'), office:g('a_office'), email:g('a_email'), phone:g('a_phone') });
   Object.assign(S.broker, { office:g('b_office'), name:g('b_name'), phone:g('b_phone') });
-  S.settings.remindDays = Number(g('t_remind')||3); S.settings.deemedRate = Number(g('t_rate')||3.1); S.settings.cloudSync = $('#t_cloud').checked; S.settings.apiKey = g('t_apikey'); S.settings.apiModel = g('t_apimodel') || 'claude-sonnet-4-5'; S.settings.serverUrl = g('t_server').replace(/\/+$/,''); S.settings.serverToken = g('t_servertoken');
+  S.settings.remindDays = Number(g('t_remind')||3); S.settings.deemedRate = Number(g('t_rate')||3.1); S.settings.cloudSync = $('#t_cloud').checked;
   save(); closeSheet(); render(); toast('설정을 저장했습니다'); }
-async function testServer(){ const u = $('#t_server').value.trim().replace(/\/+$/,''); const el = $('#t_serverstat'); if (!u) return el.textContent = '주소를 입력하세요'; el.innerHTML = '<span class="spin"></span>';
-  try { const r = await fetch(u + '/'); const j = await r.json(); el.textContent = j.ok ? `연결됨 · ${j.model}` : '응답이 올바르지 않습니다'; } catch(e){ el.textContent = '연결 실패: 주소를 확인하세요'; } }
 function restoreFile(f){ if(!f) return; const r = new FileReader(); r.onload = () => { try { S = Object.assign(defaults(), JSON.parse(r.result)); save(); closeSheet(); render(); toast('복원했습니다'); } catch(e){ toast('파일을 읽을 수 없습니다'); } }; r.readAsText(f); }
 
 /* ---------- 공통 UI ---------- */
