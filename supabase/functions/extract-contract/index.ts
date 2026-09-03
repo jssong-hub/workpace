@@ -95,7 +95,7 @@ async function callUpstage(images: string[], key: string) {
 const GEMINI_PROMPT = `당신은 한국 부동산 임대차계약서 검토 보조원입니다. 첨부된 계약서 사진(들)을 읽고, 아래 JSON 스키마의 필드를 채운 JSON만 출력하세요(설명·코드블록 금지). 금액은 "金 삼천만 원정"처럼 한글·한자로 적혀 있어도 원 단위 정수로 환산하고, 읽을 수 없는 값은 null 또는 빈 문자열로 두세요.
 스키마: ` + JSON.stringify(SCHEMA);
 
-async function callGemini(images: string[], key: string, modelOverride?: string) {
+async function callGemini(images: string[], key: string, modelOverride?: string, lowThinking = false) {
   const model = modelOverride ?? Deno.env.get("GEMINI_MODEL") ?? "gemini-3.6-flash";
   const parts: any[] = images.map((u) => { const m = /^data:(image\/[a-z+]+);base64,(.+)$/i.exec(u)!; return { inline_data: { mime_type: m[1], data: m[2] } }; });
   parts.push({ text: GEMINI_PROMPT });
@@ -103,7 +103,8 @@ async function callGemini(images: string[], key: string, modelOverride?: string)
     const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
       method: "POST",
       headers: { "content-type": "application/json", "x-goog-api-key": key },
-      body: JSON.stringify({ contents: [{ role: "user", parts }], generationConfig: { temperature: 0, response_mime_type: "application/json", max_output_tokens: 2048 } }),
+      // 최신 Gemini는 '생각(thinking)' 토큰을 먼저 쓰므로 출력 한도를 넉넉히 잡고, 필요 시 생각 수준을 낮춰 재시도
+      body: JSON.stringify({ contents: [{ role: "user", parts }], generationConfig: { temperature: 0, response_mime_type: "application/json", max_output_tokens: 16384, ...(lowThinking ? { thinkingConfig: { thinkingLevel: "low" } } : {}) } }),
     });
     if (r.status === 429 || r.status >= 500) {
       if (attempt === 3) throw new Error(r.status === 429 ? "무료 사용량을 잠시 초과했습니다. 1분 후 다시 시도해 주세요" : `판독 서비스 오류 ${r.status}`);
@@ -116,12 +117,21 @@ async function callGemini(images: string[], key: string, modelOverride?: string)
       // 모델 단종 안내("Please update your code to use models/xxx")가 오면 그 모델로 한 번 자동 재시도
       const sug = /models\/([a-z0-9.\-]+)/gi; let last: string | null = null, mm: RegExpExecArray | null;
       while ((mm = sug.exec(msg))) if (mm[1] !== model) last = mm[1];
-      if (!modelOverride && last && /no longer available|not found|deprecated|update your code/i.test(msg)) return callGemini(images, key, last);
+      if (!modelOverride && last && /no longer available|not found|deprecated|update your code/i.test(msg)) return callGemini(images, key, last, lowThinking);
+      if (lowThinking && /thinking/i.test(msg)) throw new Error("AI가 결과를 돌려주지 않았습니다. 사진을 더 밝고 선명하게 다시 찍어 주세요");
       throw new Error(msg);
     }
-    const text = (j?.candidates?.[0]?.content?.parts ?? []).map((p: any) => p.text ?? "").join("");
+    const cand = j?.candidates?.[0];
+    const text = (cand?.content?.parts ?? []).filter((p: any) => !p.thought).map((p: any) => p.text ?? "").join("");
     const m = String(text).match(/\{[\s\S]*\}/);
-    return JSON.parse(m ? m[0] : text);
+    if (!m) {
+      // 출력이 비었으면(생각 토큰이 한도를 다 쓴 경우 등) 생각 수준을 낮춰 한 번 더
+      if (!lowThinking) return callGemini(images, key, model, true);
+      const why = cand?.finishReason ?? j?.promptFeedback?.blockReason ?? "응답 없음";
+      throw new Error(`AI가 결과를 돌려주지 않았습니다 (${why}). 사진을 더 밝고 선명하게 다시 찍어 주세요`);
+    }
+    try { return JSON.parse(m[0]); }
+    catch { throw new Error("AI 응답을 해석하지 못했습니다. 다시 시도해 주세요"); }
   }
   throw new Error("판독 실패");
 }
