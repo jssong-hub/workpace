@@ -1,0 +1,791 @@
+<title>임대지기</title>
+<meta name="theme-color" content="#1F3A4D">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+:root{
+  --bg:#F3F5F7; --surface:#FFFFFF; --surface2:#EAEEF2; --line:#D7DEE5;
+  --text:#18242E; --muted:#5E6E7C; --faint:#8C9AA6;
+  --primary:#1F3A4D; --primary-ink:#FFFFFF; --primary-soft:#E3ECF3;
+  --accent:#B8852F; --accent-soft:#F6EEDD;
+  --ok:#1F8A5B; --ok-soft:#DFF3E8; --warn:#C4841C; --warn-soft:#FBEFD6; --bad:#C43D3D; --bad-soft:#FBE3E3;
+  --shadow:0 1px 2px rgba(20,35,50,.06),0 6px 20px rgba(20,35,50,.06);
+  --r:14px;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0E161D; --surface:#172129; --surface2:#1F2B35; --line:#2B3843;
+    --text:#E7EDF2; --muted:#A3B1BC; --faint:#6F7E8A;
+    --primary:#8FB6D1; --primary-ink:#0E161D; --primary-soft:#1B2E3D;
+    --accent:#D9A94E; --accent-soft:#33291A;
+    --ok:#4CC08A; --ok-soft:#173226; --warn:#E2A84A; --warn-soft:#33281A; --bad:#EF6B6B; --bad-soft:#3A1E1E;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 20px rgba(0,0,0,.35);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0E161D; --surface:#172129; --surface2:#1F2B35; --line:#2B3843;
+  --text:#E7EDF2; --muted:#A3B1BC; --faint:#6F7E8A;
+  --primary:#8FB6D1; --primary-ink:#0E161D; --primary-soft:#1B2E3D;
+  --accent:#D9A94E; --accent-soft:#33291A;
+  --ok:#4CC08A; --ok-soft:#173226; --warn:#E2A84A; --warn-soft:#33281A; --bad:#EF6B6B; --bad-soft:#3A1E1E;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 20px rgba(0,0,0,.35);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;font-size:15px;line-height:1.5;-webkit-text-size-adjust:100%}
+.num{font-family:"IBM Plex Mono","IBM Plex Sans KR",monospace;font-variant-numeric:tabular-nums}
+button{font:inherit;color:inherit}
+input,select,textarea{font:inherit;color:var(--text);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;width:100%}
+input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid var(--primary);outline-offset:1px}
+textarea{min-height:110px;resize:vertical}
+label.f{display:block;font-size:12.5px;color:var(--muted);margin:10px 0 4px;letter-spacing:.02em}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+#app{max-width:480px;margin:0 auto;min-height:100dvh;display:flex;flex-direction:column;background:var(--bg);position:relative}
+header.top{position:sticky;top:0;z-index:20;background:var(--primary);color:var(--primary-ink);padding:12px 16px;display:flex;align-items:center;gap:10px}
+header.top .logo{width:34px;height:34px;border-radius:9px;background:var(--accent);display:grid;place-items:center;font-weight:700;color:#1B1408;font-size:15px;letter-spacing:-.02em}
+header.top h1{font-size:17px;margin:0;font-weight:600;letter-spacing:-.01em;flex:1}
+header.top .sub{font-size:11.5px;opacity:.75;display:block;font-weight:400}
+.iconbtn{background:transparent;border:0;width:38px;height:38px;border-radius:10px;display:grid;place-items:center;position:relative;cursor:pointer}
+.iconbtn:hover{background:rgba(255,255,255,.12)}
+.iconbtn svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.badge{position:absolute;top:4px;right:4px;background:var(--bad);color:#fff;font-size:10.5px;min-width:17px;height:17px;border-radius:9px;display:grid;place-items:center;padding:0 4px;font-weight:600}
+main{flex:1;padding:14px 14px 96px}
+nav.tabs{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:var(--surface);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(5,1fr);z-index:20;padding-bottom:env(safe-area-inset-bottom)}
+nav.tabs button{border:0;background:transparent;padding:8px 0 9px;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:var(--faint);cursor:pointer;position:relative}
+nav.tabs button svg{width:23px;height:23px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+nav.tabs button.on{color:var(--primary);font-weight:600}
+nav.tabs .dot{position:absolute;top:6px;right:calc(50% - 16px);width:8px;height:8px;border-radius:4px;background:var(--bad)}
+h2.sec{font-size:13px;color:var(--muted);font-weight:600;letter-spacing:.04em;text-transform:uppercase;margin:22px 2px 8px}
+h2.sec:first-child{margin-top:4px}
+h2.sec .r{float:right;font-weight:500;text-transform:none;letter-spacing:0;color:var(--primary);cursor:pointer;background:none;border:0;font-size:12.5px;padding:0}
+.card{background:var(--surface);border-radius:var(--r);padding:14px;box-shadow:var(--shadow)}
+.card+.card{margin-top:10px}
+.card h3{margin:0 0 4px;font-size:15.5px;font-weight:600}
+.card .meta{font-size:12.5px;color:var(--muted)}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.kpi{background:var(--surface);border-radius:var(--r);padding:12px 14px;box-shadow:var(--shadow)}
+.kpi .l{font-size:12px;color:var(--muted)}
+.kpi .v{font-size:21px;font-weight:600;margin-top:2px;letter-spacing:-.01em}
+.kpi .v small{font-size:12px;color:var(--muted);font-weight:500;margin-left:2px}
+.kpi.ok .v{color:var(--ok)} .kpi.bad .v{color:var(--bad)}
+.pill{display:inline-block;font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--surface2);color:var(--muted);vertical-align:middle;white-space:nowrap}
+.pill.ok{background:var(--ok-soft);color:var(--ok)} .pill.warn{background:var(--warn-soft);color:var(--warn)} .pill.bad{background:var(--bad-soft);color:var(--bad)} .pill.pri{background:var(--primary-soft);color:var(--primary)} .pill.acc{background:var(--accent-soft);color:var(--accent)}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:9px 13px;font-size:13.5px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:6px;justify-content:center;white-space:nowrap}
+.btn:hover{background:var(--surface2)}
+.btn.p{background:var(--primary);color:var(--primary-ink);border-color:var(--primary)}
+.btn.p:hover{filter:brightness(1.08)}
+.btn.ok{background:var(--ok);color:#fff;border-color:var(--ok)} .btn.bad{background:var(--bad-soft);color:var(--bad);border-color:transparent} .btn.acc{background:var(--accent);color:#1B1408;border-color:var(--accent)}
+.btn.sm{padding:6px 10px;font-size:12.5px;border-radius:8px} .btn.w{width:100%}
+.btn:disabled{opacity:.5;cursor:default}
+.btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.btns .btn{flex:1}
+.item{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-top:1px solid var(--line)}
+.item:first-of-type{border-top:0;padding-top:2px}
+.item .ic{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;flex:none;font-size:16px;font-weight:700}
+.item .ic.due{background:var(--warn-soft);color:var(--warn)} .item .ic.bad{background:var(--bad-soft);color:var(--bad)} .item .ic.exp{background:var(--primary-soft);color:var(--primary)} .item .ic.inv{background:var(--accent-soft);color:var(--accent)} .item .ic.ok{background:var(--ok-soft);color:var(--ok)}
+.item .b{flex:1;min-width:0}
+.item .t{font-weight:600;font-size:14.5px}
+.item .d{font-size:12.5px;color:var(--muted);margin-top:1px}
+.seg{display:inline-flex;background:var(--surface2);border-radius:10px;padding:3px;gap:2px}
+.seg button{border:0;background:transparent;padding:6px 12px;border-radius:8px;font-size:12.5px;color:var(--muted);cursor:pointer;font-weight:500}
+.seg button.on{background:var(--surface);color:var(--text);box-shadow:var(--shadow);font-weight:600}
+canvas.chart{width:100%;height:190px;display:block;margin-top:8px}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--muted);margin-top:6px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+table.tb{width:100%;border-collapse:collapse;font-size:13px}
+table.tb th{text-align:left;font-weight:600;color:var(--muted);font-size:11.5px;letter-spacing:.03em;padding:6px 4px;border-bottom:1px solid var(--line)}
+table.tb td{padding:8px 4px;border-bottom:1px solid var(--line);vertical-align:middle}
+table.tb td.r,table.tb th.r{text-align:right}
+table.tb th,table.tb td.num{white-space:nowrap}
+.tbwrap{overflow-x:auto}
+.empty{text-align:center;color:var(--faint);padding:28px 10px;font-size:13.5px}
+.banner{background:var(--accent-soft);color:var(--text);border-radius:12px;padding:10px 12px;font-size:12.5px;display:flex;gap:10px;align-items:center;margin-bottom:12px}
+.banner b{color:var(--accent);white-space:nowrap}
+.banner button{margin-left:auto}
+.note{font-size:12px;color:var(--muted);line-height:1.55;margin-top:8px}
+.note.law{border-left:3px solid var(--accent);padding-left:10px}
+.fab{position:fixed;right:calc(50% - 240px + 16px);bottom:78px;z-index:19;background:var(--accent);color:#1B1408;border:0;border-radius:999px;padding:12px 18px;font-weight:600;box-shadow:var(--shadow);cursor:pointer;font-size:14px}
+@media (max-width:480px){.fab{right:16px}}
+/* modal */
+#modal{position:fixed;inset:0;z-index:50;display:none;align-items:flex-end;justify-content:center;background:rgba(10,20,30,.45)}
+#modal.open{display:flex}
+#modal .sheet{background:var(--bg);width:100%;max-width:480px;max-height:92dvh;border-radius:18px 18px 0 0;overflow:auto;padding:8px 16px 24px;animation:up .22s ease-out}
+@keyframes up{from{transform:translateY(30px);opacity:.6}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){#modal .sheet{animation:none}}
+#modal .grip{width:44px;height:4px;border-radius:2px;background:var(--line);margin:4px auto 10px}
+#modal h2{font-size:18px;margin:6px 0 12px;font-weight:600}
+.timeline{position:relative;padding-left:22px;margin-top:8px}
+.timeline:before{content:"";position:absolute;left:7px;top:6px;bottom:6px;width:2px;background:var(--line)}
+.tl{position:relative;padding:5px 0 9px;font-size:13px}
+.tl:before{content:"";position:absolute;left:-19px;top:10px;width:10px;height:10px;border-radius:5px;background:var(--surface);border:2px solid var(--faint)}
+.tl.past:before{background:var(--faint)} .tl.now:before{border-color:var(--accent);background:var(--accent)} .tl.key:before{border-color:var(--primary)}
+.tl .dt{color:var(--muted);font-size:12px}
+.msg{max-width:84%;padding:9px 12px;border-radius:14px;font-size:13.5px;margin:6px 0;white-space:pre-wrap;word-break:break-word}
+.msg.out{background:var(--primary);color:var(--primary-ink);margin-left:auto;border-bottom-right-radius:4px}
+.msg.in{background:var(--surface);border-bottom-left-radius:4px;box-shadow:var(--shadow)}
+.msg .at{display:block;font-size:10.5px;opacity:.7;margin-top:3px}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 11px;font-size:12.5px;cursor:pointer}
+.chip.on{background:var(--primary-soft);border-color:var(--primary);color:var(--primary);font-weight:600}
+.check{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-top:1px solid var(--line);font-size:13.5px}
+.check:first-child{border-top:0}
+.check .m{width:22px;height:22px;border-radius:6px;display:grid;place-items:center;font-size:12px;font-weight:700;flex:none}
+.check .m.ok{background:var(--ok-soft);color:var(--ok)} .check .m.warn{background:var(--warn-soft);color:var(--warn)} .check .m.bad{background:var(--bad-soft);color:var(--bad)}
+.invoice{border:1px solid var(--line);border-radius:12px;padding:12px;background:var(--surface);font-size:13px}
+.invoice .hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.invoice .hd b{font-size:14.5px}
+.invoice dl{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;margin:6px 0 0}
+.invoice dt{color:var(--muted)} .invoice dd{margin:0;text-align:right}
+.invoice .tot{border-top:1px dashed var(--line);margin-top:8px;padding-top:8px;display:flex;justify-content:space-between;font-weight:600}
+.seal{width:44px;height:44px;border-radius:22px;border:2px solid var(--accent);color:var(--accent);display:grid;place-items:center;font-size:11px;font-weight:700;transform:rotate(-12deg);line-height:1.1;text-align:center}
+#toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:13.5px;z-index:60;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90%;text-align:center}
+#toast.show{opacity:1}
+.tw{display:inline-flex;align-items:center;gap:8px;cursor:pointer}
+.tw input{width:auto;margin:0}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.mini{background:var(--surface2);border-radius:10px;padding:10px;text-align:center}
+.mini .l{font-size:11px;color:var(--muted)} .mini .v{font-weight:600;font-size:14px;margin-top:2px}
+.ai{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--accent);font-weight:600}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid var(--line);border-top-color:var(--primary);border-radius:50%;animation:sp .8s linear infinite;vertical-align:-2px}
+@keyframes sp{to{transform:rotate(360deg)}}
+details.acc{border-top:1px solid var(--line);padding:8px 0}
+details.acc summary{cursor:pointer;font-weight:600;font-size:14px;list-style:none;display:flex;justify-content:space-between}
+details.acc summary:after{content:"+";color:var(--faint)} details.acc[open] summary:after{content:"–"}
+.sub-h{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.sub-h h2{margin:0;font-size:18px;font-weight:600;flex:1}
+.back{border:0;background:var(--surface);width:36px;height:36px;border-radius:10px;cursor:pointer;box-shadow:var(--shadow);font-size:18px}
+</style>
+<div id="app">
+  <header class="top">
+    <div class="logo">지기</div>
+    <h1>임대지기<span class="sub" id="hdrSub">임대현황 · 임대료 · 세금계산서를 한 곳에서</span></h1>
+    <button class="iconbtn" id="bellBtn" aria-label="알림" title="알림">
+      <svg viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+      <span class="badge" id="bellBadge" hidden>0</span>
+    </button>
+    <button class="iconbtn" id="gearBtn" aria-label="설정" title="설정">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </button>
+  </header>
+  <main id="view"></main>
+  <nav class="tabs" id="tabs">
+    <button data-tab="home"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>홈</button>
+    <button data-tab="contracts"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>계약</button>
+    <button data-tab="alerts"><svg viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>알림<span class="dot" id="alertDot" hidden></span></button>
+    <button data-tab="msgs"><svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-8 8H5l-2 2V12a8 8 0 0 1 8-8h2a8 8 0 0 1 8 8z"/></svg>메시지</button>
+    <button data-tab="tax"><svg viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg>세무</button>
+  </nav>
+</div>
+<div id="modal" role="dialog" aria-modal="true"><div class="sheet" id="sheet"></div></div>
+<div id="toast" role="status"></div>
+<script>
+/* ================= 임대지기 — 임대인용 임대현황 관리 앱 (프로토타입) ================= */
+const $ = (s, el=document) => el.querySelector(s);
+const $$ = (s, el=document) => [...el.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const won = n => (n==null||isNaN(n)) ? '-' : Math.round(n).toLocaleString('ko-KR') + '원';
+const manwon = n => (n==null||isNaN(n)) ? '-' : (Math.round(n/10000)).toLocaleString('ko-KR') + '만원';
+const pad = n => String(n).padStart(2,'0');
+const ymd = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const ymOf = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}`;
+const parseD = s => { const [y,m,d] = s.split('-').map(Number); return new Date(y, m-1, d||1); };
+const addDays = (d,n) => { const x = new Date(d); x.setDate(x.getDate()+n); return x; };
+const addMonths = (d,n) => { const x = new Date(d); x.setMonth(x.getMonth()+n); return x; };
+const daysBetween = (a,b) => Math.round((parseD(ymd(b)) - parseD(ymd(a)))/86400000);
+const today = () => { const d = new Date(); d.setHours(0,0,0,0); return d; };
+const fmtD = s => { if(!s) return '-'; const d = typeof s==='string'?parseD(s):s; return `${d.getFullYear()}.${pad(d.getMonth()+1)}.${pad(d.getDate())}`; };
+const fmtYM = ym => { const [y,m]=ym.split('-'); return `${y}년 ${Number(m)}월`; };
+const uid = () => Math.random().toString(36).slice(2,9);
+const nowStr = () => { const d=new Date(); return `${ymd(d)} ${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+const TYPES = { shop:'상가', office:'사무실', house:'주택', land:'토지', etc:'기타' };
+const TAXABLE = t => t !== 'house';   // 주택임대용역: 부가가치세 면세(부가가치세법 §26①12) → 세금계산서 발급 대상 아님
+
+/* ---------- 상태 ---------- */
+const KEY = 'imdaejigi.v1';
+let S = load();
+let ui = { tab:'home', sub:{}, chartMode:'month', taxTab:'invoice', invYM: ymOf(today()), thread:null, detail:null };
+let CAP = { sample:null, db:null, downloads:null, images:false };
+
+function defaults(){
+  const y = today().getFullYear();
+  return {
+    demo:true,
+    landlord:{ name:'홍길동', phone:'010-1234-5678', bizName:'길동부동산임대', bizNo:'123-45-67890', addr:'서울특별시 강남구 테헤란로 123', taxType:'general', email:'' },
+    taxAgent:{ name:'송진석 세무사', office:'대한세무법인', phone:'', email:'jssong@taxdh.net', shared:false, sharedAt:'' },
+    broker:{ name:'', office:'테헤란로 공인중개사사무소', phone:'010-2222-3333' },
+    settings:{ deemedRate:3.1, remindDays:3, notifyBrowser:false, cloudSync:false, purchaseVat:{} },
+    contracts:[
+      { id:'c1', name:'테헤란로 상가 1층 101호', type:'shop', addr:'서울 강남구 테헤란로 123, 1층 101호', area:42.5, tenant:'김민수', tenantPhone:'010-9876-5432', tenantBiz:'220-81-12345', tenantBizName:'(주)민수커피', deposit:50000000, rent:2800000, mgmt:200000, vatSeparate:true, payDay:25, start:`${y-1}-09-01`, end:`${y+1}-08-31`, memo:'특약: 임대료 연 5% 범위 내 인상 협의', review:null, quotes:[{src:'인근 공인중개사 문의', rent:3000000, deposit:50000000, area:42, at:`${y}-08-20`},{src:'국토부 실거래가', rent:2650000, deposit:40000000, area:40, at:`${y}-07-15`}] },
+      { id:'c2', name:'역삼 오피스 5층', type:'office', addr:'서울 강남구 역삼로 45, 5층', area:98, tenant:'박서준', tenantPhone:'010-5555-1212', tenantBiz:'314-86-00999', tenantBizName:'서준소프트(주)', deposit:80000000, rent:4500000, mgmt:450000, vatSeparate:true, payDay:5, start:`${y-2}-11-01`, end:`${y}-10-31`, memo:'', review:null, quotes:[] },
+      { id:'c3', name:'잠실 아파트 12층', type:'house', addr:'서울 송파구 올림픽로 300, 1203호', area:84.9, tenant:'이지은', tenantPhone:'010-7777-8888', tenantBiz:'', tenantBizName:'', deposit:300000000, rent:900000, mgmt:0, vatSeparate:false, payDay:10, start:`${y-1}-03-15`, end:`${y+1}-03-14`, memo:'주택임대차 신고 완료(확정일자 부여)', review:null, quotes:[] }
+    ],
+    rents:{}, invoices:{}, threads:[], notifications:[], dismissed:{}
+  };
+}
+function seedDemoRents(st){
+  // 예시: 지난 달까지 대부분 입금, 일부 지연/미납으로 표시
+  const t = today(); const prevYM = ymOf(addMonths(t,-1));
+  st.contracts.forEach(c => {
+    monthsOf(c, prevYM).forEach((ym, idx, arr) => {
+      const k = `${c.id}_${ym}`; const d = parseD(ym+'-01');
+      const late = (c.id==='c1' && idx === arr.length-3);
+      st.rents[k] = { status:'paid', paidAt: ymd(new Date(d.getFullYear(), d.getMonth(), Math.min(c.payDay + (late?6:0), 28))), amount: c.rent };
+      if (TAXABLE(c.type)) st.invoices[k] = { issued:true, issuedAt: ymd(new Date(d.getFullYear(), d.getMonth(), Math.min(c.payDay,28))), no:`${ym.replace('-','')}-41000000-${c.id.toUpperCase()}01` };
+    });
+  });
+  // 지난달: c2(5일 납부)는 미입금 상태로 남겨 '재확인 알림 + 임차인 안내' 시나리오 제공
+  st.rents[`c2_${prevYM}`] = { status:'unpaid', remindAt: ymd(t), reminders:1, amount:4500000 };
+  delete st.invoices[`c2_${prevYM}`];
+  st.threads = [
+    { id:'t1', kind:'tenant', name:'김민수 (테헤란로 101호)', phone:'010-9876-5432', contractId:'c1', messages:[{dir:'out', text:'안녕하세요 김민수 사장님, 임대인 홍길동입니다. 다음 달 임대료 납부일(25일) 안내드립니다.', at:`${ymd(addDays(t,-40))} 10:12`, via:'문자'},{dir:'in', text:'네 확인했습니다. 감사합니다!', at:`${ymd(addDays(t,-40))} 10:40`, via:'문자'}] },
+    { id:'t2', kind:'broker', name:'테헤란로 공인중개사사무소', phone:'010-2222-3333', contractId:'', messages:[{dir:'out', text:'테헤란로 123 1층 상가(42.5㎡) 최근 임대 시세가 어느 정도인지 문의드립니다.', at:`${ymd(addDays(t,-14))} 14:02`, via:'문자'},{dir:'in', text:'1층 40㎡대는 보증금 5천 / 월 290~310만원 선에서 거래됩니다.', at:`${ymd(addDays(t,-14))} 15:30`, via:'문자'}] },
+    { id:'t3', kind:'tax', name:'송진석 세무사 (대한세무법인)', phone:'', contractId:'', messages:[{dir:'in', text:'7월 부가세 확정신고 자료 잘 받았습니다. 간주임대료 포함해서 신고 완료했습니다.', at:`${ymd(addDays(t,-35))} 17:05`, via:'이메일'}] }
+  ];
+  return st;
+}
+function load(){
+  try { const raw = localStorage.getItem(KEY); if (raw) { const o = JSON.parse(raw); return Object.assign(defaults(), o); } } catch(e){}
+  return seedDemoRents(defaults());
+}
+let saveTimer=null;
+function save(){
+  try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e){}
+  if (CAP.db && S.settings.cloudSync){ clearTimeout(saveTimer); saveTimer = setTimeout(()=>cloudPush(), 800); }
+}
+async function cloudPush(){
+  try { await CAP.db.doc('workspaces/main').set({ payload: JSON.stringify(S), at: Date.now() }); } catch(e){ console.warn('cloud push', e); }
+}
+async function cloudPull(){
+  try { const snap = await CAP.db.doc('workspaces/main').get(); if (snap.exists){ const d = snap.data(); if (d && d.payload){ S = Object.assign(defaults(), JSON.parse(d.payload)); S.settings.cloudSync = true; localStorage.setItem(KEY, JSON.stringify(S)); render(); toast('클라우드 데이터를 불러왔습니다'); } } } catch(e){ console.warn('cloud pull', e); }
+}
+
+/* ---------- 계산 유틸 ---------- */
+const byId = id => S.contracts.find(c => c.id === id);
+function dueDate(c, ym){ const [y,m] = ym.split('-').map(Number); const last = new Date(y, m, 0).getDate(); return new Date(y, m-1, Math.min(c.payDay||1, last)); }
+function monthsOf(c, untilYM){
+  const out=[]; let d = parseD(c.start.slice(0,7)+'-01'); const endYM = untilYM || Math.min(c.end.slice(0,7), ymOf(addMonths(today(),1)));
+  while (ymOf(d) <= endYM){ out.push(ymOf(d)); d = addMonths(d,1); }
+  return out;
+}
+function rentState(c, ym){
+  const r = S.rents[`${c.id}_${ym}`] || {}; const due = dueDate(c, ym); const t = today();
+  if (r.status === 'paid') return { code:'paid', label:'입금완료', cls:'ok', due, r };
+  if (r.status === 'unpaid'){ const late = daysBetween(due, t); return { code:'unpaid', label: late>0?`미납 ${late}일`:'미입금', cls:'bad', due, r }; }
+  if (ymd(due) === ymd(t)) return { code:'due', label:'오늘 납부일', cls:'warn', due, r };
+  if (due < t) return { code:'check', label:'입금 확인 필요', cls:'warn', due, r };
+  return { code:'upcoming', label:`${daysBetween(t,due)}일 후`, cls:'', due, r };
+}
+function active(c){ const t = ymd(today()); return c.start <= t && c.end >= t; }
+function vatOf(c){ return c.vatSeparate && TAXABLE(c.type) ? Math.round(c.rent*0.1) : 0; }
+/* 갱신·만료 관련 법정 기간 (상가: 만료 6개월~1개월 전 / 주택: 6개월~2개월 전) */
+function renewalWindow(c){
+  const end = parseD(c.end);
+  const open = addMonths(end, -6); const close = addMonths(end, c.type==='house' ? -2 : -1);
+  return { open, close, end, law: c.type==='house' ? '주택임대차보호법 §6①·§6의3①' : '상가건물 임대차보호법 §10①·④' };
+}
+/* 간주임대료 (부가가치세): 보증금 × 정기예금이자율 × 과세대상기간 일수 / 365 */
+function periodOf(ym){ const [y,m] = ym.split('-').map(Number); return m<=6 ? {y, h:1, from:`${y}-01-01`, to:`${y}-06-30`, label:`${y}년 1기(1~6월)`, due:`${y}-07-25`} : {y, h:2, from:`${y}-07-01`, to:`${y}-12-31`, label:`${y}년 2기(7~12월)`, due:`${y+1}-01-25`}; }
+function deemedRent(c, p){
+  if (!TAXABLE(c.type)) return 0;
+  const from = new Date(Math.max(parseD(c.start), parseD(p.from))); const to = new Date(Math.min(parseD(c.end), parseD(p.to)));
+  if (to < from) return 0; const days = daysBetween(from, to) + 1; const yearDays = ((p.y%4===0&&p.y%100!==0)||p.y%400===0) ? 366 : 365;
+  return Math.floor(c.deposit * (S.settings.deemedRate/100) * days / yearDays);
+}
+function periodMonths(p){ const out=[]; for(let m=(p.h===1?1:7); m<=(p.h===1?6:12); m++) out.push(`${p.y}-${pad(m)}`); return out; }
+function vatEstimate(p){
+  const rows = S.contracts.filter(c => TAXABLE(c.type)).map(c => {
+    const months = periodMonths(p).filter(ym => ym >= c.start.slice(0,7) && ym <= c.end.slice(0,7));
+    const supply = months.length * c.rent; const deemed = deemedRent(c, p);
+    return { c, months: months.length, supply, deemed, vat: Math.round((supply+deemed)*0.1) };
+  });
+  const supply = rows.reduce((a,r)=>a+r.supply,0), deemed = rows.reduce((a,r)=>a+r.deemed,0);
+  const simple = S.landlord.taxType === 'simple';
+  // 간이과세자(부동산임대업 업종별 부가가치율 40%): 납부세액 = 공급대가 × 40% × 10%
+  const outputVat = simple ? Math.round((supply+deemed) * 0.4 * 0.1) : Math.round((supply+deemed)*0.1);
+  const inputVat = simple ? 0 : Number(S.settings.purchaseVat?.[`${p.y}-${p.h}`] || 0);
+  return { rows, supply, deemed, outputVat, inputVat, payable: Math.max(0, outputVat - inputVat), simple };
+}
+
+/* ---------- 알림 엔진 (앱 실행 시 규칙 평가) ---------- */
+function computeNotifications(){
+  const t = today(); const list = []; const tYM = ymOf(t);
+  S.contracts.filter(active).forEach(c => {
+    monthsOf(c, tYM).slice(-3).forEach(ym => {
+      const st = rentState(c, ym); const k = `${c.id}_${ym}`;
+      if (st.code === 'due') list.push({ id:`due-${k}`, kind:'due', title:`${c.tenant} · 오늘 임대료 납부일`, body:`${c.name} · ${won(c.rent + vatOf(c))} 입금 여부를 확인해 주세요.`, cid:c.id, ym });
+      else if (st.code === 'check') list.push({ id:`check-${k}`, kind:'due', title:`${c.tenant} · 입금 확인 필요`, body:`${fmtD(st.due)} 납부일이 지났습니다. 입금 여부를 체크해 주세요.`, cid:c.id, ym });
+      else if (st.code === 'unpaid'){
+        const ra = st.r.remindAt || ymd(t);
+        if (ra <= ymd(t)) list.push({ id:`remind-${k}-${ra}`, kind:'bad', title:`${c.tenant} · 임대료 미입금 재확인`, body:`${fmtYM(ym)} 임대료 ${won(c.rent+vatOf(c))}가 아직 미입금입니다. 입금 확인 또는 임차인 안내를 진행하세요.`, cid:c.id, ym });
+      }
+    });
+    // 만료 알림: D-180(갱신요구 가능기간 시작), D-90, 통지기한(상가 D-30/주택 D-60), D-7
+    const dLeft = daysBetween(t, parseD(c.end)); const rw = renewalWindow(c);
+    const marks = [ [180,'계약갱신 요구 가능기간 시작 6개월 전'], [90,'만료 3개월 전'], [c.type==='house'?60:30, `갱신거절·조건변경 통지기한 (${rw.law})`], [7,'만료 1주 전'] ];
+    marks.forEach(([d,why]) => { if (dLeft <= d && dLeft > (d===180?90:d===90?(c.type==='house'?60:30):d===7?-1:7)) list.push({ id:`exp-${c.id}-${d}`, kind:'exp', title:`${c.name} · 만료 ${dLeft}일 전`, body:`${fmtD(c.end)} 만료 · ${why}. 재계약 여부를 임차인과 협의하거나 중개사무소에 연락하세요.`, cid:c.id }); });
+    // 세금계산서: 전월분 미발급 → 다음 달 10일까지 발급 안내
+    if (TAXABLE(c.type)){
+      const prev = ymOf(addMonths(t,-1)); const k = `${c.id}_${prev}`;
+      if (prev >= c.start.slice(0,7) && !(S.invoices[k]?.issued)) list.push({ id:`inv-${k}`, kind:'inv', title:`${c.tenantBizName||c.tenant} · ${fmtYM(prev)} 세금계산서 미발급`, body:`발급기한: ${fmtD(new Date(t.getFullYear(), t.getMonth(), 10))} (공급시기가 속한 달의 다음 달 10일)`, cid:c.id, ym: prev });
+    }
+  });
+  // 병합: 기존 읽음 상태 유지, 해제된 알림 제외
+  const prev = Object.fromEntries(S.notifications.map(n => [n.id, n]));
+  const merged = list.filter(n => !S.dismissed[n.id]).map(n => Object.assign({ at: prev[n.id]?.at || nowStr(), read: prev[n.id]?.read || false }, n));
+  const fresh = merged.filter(n => !prev[n.id]);
+  S.notifications = merged; save();
+  if (fresh.length && S.settings.notifyBrowser && 'Notification' in window && Notification.permission === 'granted'){
+    fresh.slice(0,3).forEach(n => { try { new Notification('임대지기 · ' + n.title, { body: n.body }); } catch(e){} });
+  }
+  return merged;
+}
+
+/* ---------- 메시지 템플릿 (임대인 본인 명의 발송) ---------- */
+function tplUnpaid(c, ym){
+  const st = rentState(c, ym); const amt = c.rent + vatOf(c);
+  return `[임대료 납부 안내]\n${c.tenant} 님, 안녕하세요. ${c.name} 임대인 ${S.landlord.name}입니다.\n${fmtYM(ym)} 임대료 ${won(amt)}${vatOf(c)?' (부가세 포함)':''}이 납부일(${fmtD(st.due)}) 기준 아직 확인되지 않았습니다.\n이미 이체하셨다면 이 문자는 무시하셔도 됩니다. 확인 부탁드리며, 사정이 있으시면 편하게 연락 주세요.\n감사합니다.`;
+}
+function tplExpiry(c){
+  const rw = renewalWindow(c);
+  return `[임대차계약 만료 안내]\n${c.tenant} 님, ${c.name} 임대인 ${S.landlord.name}입니다.\n현재 계약이 ${fmtD(c.end)}에 만료됩니다. 재계약(갱신) 의사가 있으신지 ${fmtD(rw.close)}까지 알려주시면 조건을 협의하여 진행하겠습니다.\n갱신을 원하지 않으시면 만료일에 맞춰 명도 및 보증금 반환 절차를 준비하겠습니다. 감사합니다.`;
+}
+function tplBroker(c){
+  return `[임대 의뢰]\n안녕하세요, ${S.landlord.name}입니다. 아래 물건 임대차계약이 ${fmtD(c.end)} 만료 예정이어서 새 임차인 중개를 의뢰드립니다.\n- 물건: ${c.name} (${TYPES[c.type]}, ${c.area||'-'}㎡)\n- 소재지: ${c.addr}\n- 현재 조건: 보증금 ${manwon(c.deposit)} / 월 ${manwon(c.rent)}${c.vatSeparate?' (VAT 별도)':''}\n- 입주 가능일: ${fmtD(addDays(parseD(c.end),1))}\n연락 주시면 세부 조건 협의하겠습니다.`;
+}
+function tplQuote(c){
+  return `[시세 문의]\n안녕하세요, ${S.landlord.name}입니다. ${c.addr} (${TYPES[c.type]}, 약 ${c.area||'-'}㎡) 물건의 최근 임대 시세(보증금/월세)를 알려주실 수 있을까요? 현재 보증금 ${manwon(c.deposit)} / 월 ${manwon(c.rent)}에 임대 중입니다. 감사합니다.`;
+}
+function tplTax(){
+  return `[임대현황 자료 공유]\n${S.taxAgent.name} 님, ${S.landlord.name}입니다. 임대지기 앱에서 생성한 임대현황·세금계산서 발급내역 자료를 보내드립니다. 신고에 참고 부탁드립니다.`;
+}
+</script>
+<script>
+/* ================= 렌더링 ================= */
+function render(){
+  computeNotifications();
+  const unread = S.notifications.filter(n => !n.read).length;
+  $('#bellBadge').hidden = !unread; $('#bellBadge').textContent = unread; $('#alertDot').hidden = !unread;
+  $$('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === ui.tab));
+  $('#hdrSub').textContent = S.landlord.name ? `${S.landlord.name} 임대인 · 물건 ${S.contracts.length}건` : '임대현황 · 임대료 · 세금계산서를 한 곳에서';
+  const v = $('#view'); v.innerHTML = '';
+  const fab = $('.fab'); if (fab) fab.remove();
+  if (ui.detail) return renderDetail(v, byId(ui.detail));
+  if (ui.thread) return renderThread(v, S.threads.find(t => t.id === ui.thread));
+  ({ home: renderHome, contracts: renderContracts, alerts: renderAlerts, msgs: renderMsgs, tax: renderTax })[ui.tab](v);
+  window.scrollTo(0,0);
+}
+function demoBanner(){ return S.demo ? `<div class="banner"><b>예시 데이터</b>로 화면을 미리 보고 있습니다. 실제 계약을 등록하면 자동으로 전환됩니다. <button class="btn sm" onclick="clearDemo()">예시 지우기</button></div>` : ''; }
+function clearDemo(){ if(!confirm('예시 데이터를 모두 지우고 빈 상태로 시작할까요?')) return; const keep = { landlord:S.landlord, taxAgent:S.taxAgent, broker:S.broker, settings:S.settings }; S = Object.assign(defaults(), keep, { demo:false, contracts:[], rents:{}, invoices:{}, threads:[], notifications:[], dismissed:{} }); save(); render(); toast('예시 데이터를 지웠습니다'); }
+
+/* ---------- 홈 ---------- */
+function renderHome(v){
+  const t = today(); const tYM = ymOf(t); const act = S.contracts.filter(active);
+  let planned=0, paid=0, unpaid=0, yearPaid=0;
+  act.forEach(c => { if (tYM >= c.start.slice(0,7) && tYM <= c.end.slice(0,7)){ planned += c.rent; const st = rentState(c,tYM); if (st.code==='paid') paid += c.rent; if (st.code==='unpaid') unpaid += c.rent; } });
+  S.contracts.forEach(c => monthsOf(c, tYM).forEach(ym => { if (ym.slice(0,4)===String(t.getFullYear()) && S.rents[`${c.id}_${ym}`]?.status==='paid') yearPaid += c.rent; }));
+  const todo = S.notifications.slice(0,6);
+  v.innerHTML = `${demoBanner()}
+  <h2 class="sec">${t.getMonth()+1}월 임대료 현황</h2>
+  <div class="kpis">
+    <div class="kpi"><div class="l">이번 달 예정 (공급가액)</div><div class="v num">${manwon(planned)}</div></div>
+    <div class="kpi ok"><div class="l">입금 완료</div><div class="v num">${manwon(paid)}<small>${planned?Math.round(paid/planned*100):0}%</small></div></div>
+    <div class="kpi ${unpaid?'bad':''}"><div class="l">미입금</div><div class="v num">${manwon(unpaid)}</div></div>
+    <div class="kpi"><div class="l">${t.getFullYear()}년 누적 수납</div><div class="v num">${manwon(yearPaid)}</div></div>
+  </div>
+  <div class="btns" style="margin-top:12px"><button class="btn acc" onclick="openAdd()">📷 계약서 촬영해서 등록</button><button class="btn" onclick="go('contracts')">계약 목록 보기</button></div>
+  <h2 class="sec">확인이 필요한 일 <button class="r" onclick="go('alerts')">전체 보기</button></h2>
+  <div class="card">${todo.length ? todo.map(notifItem).join('') : '<div class="empty">지금 확인할 일이 없습니다 🙂</div>'}</div>
+  <h2 class="sec">수납 추이 <span class="r"><span class="seg" id="chartSeg">${['month','quarter','year'].map(m=>`<button class="${ui.chartMode===m?'on':''}" onclick="ui.chartMode='${m}';render()">${{month:'월간',quarter:'분기',year:'연간'}[m]}</button>`).join('')}</span></span></h2>
+  <div class="card"><canvas class="chart" id="chart"></canvas><div class="legend"><span><i style="background:var(--line)"></i>예정</span><span><i style="background:var(--primary)"></i>입금</span><span><i style="background:var(--bad)"></i>미납</span></div><div class="grid3" id="chartSum" style="margin-top:10px"></div></div>
+  <h2 class="sec">내 임대 물건 <button class="r" onclick="go('contracts')">관리</button></h2>
+  <div class="card">${S.contracts.map(c => { const st = rentState(c, tYM); const d = daysBetween(t, parseD(c.end)); return `<div class="item" onclick="openDetail('${c.id}')" style="cursor:pointer"><div class="ic ${st.cls||'ok'}">${TYPES[c.type][0]}</div><div class="b"><div class="t">${esc(c.name)} <span class="pill ${st.cls}">${st.label}</span></div><div class="d">${esc(c.tenant)} · 월 ${manwon(c.rent)} · 매월 ${c.payDay}일 · 만료 ${d<0?'됨':d+'일 전'}</div></div></div>`; }).join('') || '<div class="empty">등록된 계약이 없습니다. 계약 탭에서 추가하세요.</div>'}</div>`;
+  drawChart();
+}
+function seriesFor(mode){
+  const t = today(); const out = [];
+  if (mode==='month'){ for (let i=11;i>=0;i--){ const d = addMonths(t,-i); out.push({ label: `${d.getMonth()+1}월`, months:[ymOf(d)] }); } }
+  else if (mode==='quarter'){ for (let i=7;i>=0;i--){ const q = Math.floor(t.getMonth()/3) - i; const y = t.getFullYear() + Math.floor(q/3); const qq = ((q%4)+4)%4; out.push({ label:`${String(y).slice(2)}'${qq+1}Q`, months:[0,1,2].map(m=>`${y}-${pad(qq*3+m+1)}`) }); } }
+  else { for (let i=4;i>=0;i--){ const y = t.getFullYear()-i; out.push({ label:`${y}`, months:Array.from({length:12},(_,m)=>`${y}-${pad(m+1)}`) }); } }
+  return out.map(b => { let planned=0, paid=0, unpaid=0; b.months.forEach(ym => S.contracts.forEach(c => { if (ym < c.start.slice(0,7) || ym > c.end.slice(0,7) || ym > ymOf(t)) return; planned += c.rent; const st = rentState(c, ym); if (st.code==='paid') paid += c.rent; else if (st.code==='unpaid') unpaid += c.rent; })); return Object.assign(b, {planned, paid, unpaid}); });
+}
+function drawChart(){
+  const cv = $('#chart'); if (!cv) return; const data = seriesFor(ui.chartMode);
+  const cs = getComputedStyle(document.documentElement); const col = n => cs.getPropertyValue(n).trim();
+  const dpr = window.devicePixelRatio||1; const W = cv.clientWidth, H = 190; cv.width = W*dpr; cv.height = H*dpr; const g = cv.getContext('2d'); g.scale(dpr,dpr);
+  const padL=44, padR=8, padT=10, padB=26; const max = Math.max(1, ...data.map(d=>d.planned)); const step = niceStep(max/4);
+  const yMax = Math.ceil(max/step)*step; const x0=padL, x1=W-padR, y0=H-padB, y1=padT; const y = v => y0 - (v/yMax)*(y0-y1);
+  g.font = '11px "IBM Plex Mono", monospace'; g.textBaseline='middle';
+  for (let v=0; v<=yMax; v+=step){ g.strokeStyle = col('--line'); g.lineWidth=1; g.beginPath(); g.moveTo(x0, y(v)); g.lineTo(x1, y(v)); g.stroke(); g.fillStyle = col('--faint'); g.textAlign='right'; g.fillText(v>=1e8?(v/1e8).toFixed(1)+'억':Math.round(v/1e4)+'만', x0-6, y(v)); }
+  const n = data.length; const bw = (x1-x0)/n; const bar = Math.min(28, bw*0.56);
+  data.forEach((d,i) => { const cx = x0 + bw*i + bw/2; const bx = cx - bar/2;
+    g.fillStyle = col('--line'); g.fillRect(bx, y(d.planned), bar, y0-y(d.planned));
+    g.fillStyle = col('--primary'); g.fillRect(bx, y(d.paid), bar, y0-y(d.paid));
+    if (d.unpaid){ g.fillStyle = col('--bad'); g.fillRect(bx, y(d.paid+d.unpaid), bar, y(d.paid)-y(d.paid+d.unpaid)); }
+    g.fillStyle = col('--muted'); g.textAlign='center'; g.font = '11px "IBM Plex Sans KR", sans-serif'; if (n<=8 || i%2===(n-1)%2) g.fillText(d.label, cx, y0+13); });
+  const tot = data.reduce((a,d)=>({planned:a.planned+d.planned, paid:a.paid+d.paid, unpaid:a.unpaid+d.unpaid}),{planned:0,paid:0,unpaid:0});
+  $('#chartSum').innerHTML = `<div class="mini"><div class="l">기간 예정 합계</div><div class="v num">${manwon(tot.planned)}</div></div><div class="mini"><div class="l">누적 입금</div><div class="v num" style="color:var(--ok)">${manwon(tot.paid)}</div></div><div class="mini"><div class="l">수납률</div><div class="v num">${tot.planned?Math.round(tot.paid/tot.planned*100):0}%</div></div>`;
+}
+function niceStep(x){ const p = Math.pow(10, Math.floor(Math.log10(x||1))); const r = x/p; return (r<=1?1:r<=2?2:r<=5?5:10)*p; }
+
+/* ---------- 알림 ---------- */
+function notifItem(n){
+  const c = byId(n.cid); const icon = {due:'₩', bad:'!', exp:'만', inv:'計'}[n.kind] || '•';
+  let acts = '';
+  if ((n.kind==='due'||n.kind==='bad') && c) acts = `<div class="btns"><button class="btn ok sm" onclick="markPaid('${c.id}','${n.ym}')">입금 확인</button><button class="btn bad sm" onclick="openUnpaid('${c.id}','${n.ym}')">미입금 처리</button></div>`;
+  if (n.kind==='exp' && c) acts = `<div class="btns"><button class="btn p sm" onclick="openRenew('${c.id}')">재계약/연장</button><button class="btn sm" onclick="openExpire('${c.id}')">만료 · 중개 의뢰</button></div>`;
+  if (n.kind==='inv' && c) acts = `<div class="btns"><button class="btn acc sm" onclick="ui.tab='tax';ui.taxTab='invoice';ui.invYM='${n.ym}';render()">세금계산서 보기</button></div>`;
+  return `<div class="item"><div class="ic ${n.kind==='due'?'due':n.kind}">${icon}</div><div class="b"><div class="t">${esc(n.title)} ${n.read?'':'<span class="pill bad">새 알림</span>'}</div><div class="d">${esc(n.body)}</div>${acts}</div><button class="iconbtn" style="color:var(--faint)" title="알림 닫기" onclick="dismiss('${n.id}')"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>`;
+}
+function renderAlerts(v){
+  const list = S.notifications.map(n => ({...n}));
+  S.notifications.forEach(n => n.read = true); save();
+  v.innerHTML = `<div class="sub-h"><h2>알림 센터</h2><button class="btn sm" onclick="S.notifications.forEach(n=>n.read=true);save();render()">모두 읽음</button></div>
+  <div class="card">${list.length ? list.map(notifItem).join('') : '<div class="empty">알림이 없습니다</div>'}</div>
+  <h2 class="sec">알림 규칙</h2>
+  <div class="card" style="font-size:13.5px">
+    <div class="check"><div class="m warn">₩</div><div><b>임대료 납부일</b> 당일 입금 여부 확인 요청 → 입금 확인 시 알림 종료 · 미입금 시 <b>${S.settings.remindDays}일</b> 후(변경 가능) 재알림</div></div>
+    <div class="check"><div class="m bad">!</div><div><b>미입금</b> 상태에서는 임대인 본인 명의로 임차인 안내 문자를 바로 보낼 수 있습니다 (앱은 문구 작성·발송 도구 역할)</div></div>
+    <div class="check"><div class="m ok">만</div><div><b>계약 만료</b> 180일 · 90일 · 법정 통지기한(상가 30일 / 주택 60일) · 7일 전 알림. 만료 진행 시 지정 중개사무소로 의뢰 문자 생성</div></div>
+    <div class="check"><div class="m ok">計</div><div><b>세금계산서</b> 전월 임대료분 미발급 시 다음 달 10일 전 알림 (주택임대는 면세로 제외)</div></div>
+    <div class="note">브라우저 푸시: ${('Notification' in window) ? (Notification.permission==='granted' ? '<span class="pill ok">허용됨</span>' : `<button class="btn sm" onclick="askNotify()">푸시 알림 허용</button>`) : '이 기기에서는 지원되지 않음'} &nbsp;· 홈 화면에 추가하면 앱처럼 실행됩니다. 실서비스에서는 서버 푸시(FCM/카카오 알림톡)로 대체됩니다.</div>
+  </div>`;
+}
+async function askNotify(){ try { const p = await Notification.requestPermission(); S.settings.notifyBrowser = p==='granted'; save(); render(); toast(p==='granted'?'푸시 알림이 켜졌습니다':'알림이 허용되지 않았습니다'); } catch(e){ toast('알림 권한을 요청할 수 없습니다'); } }
+function dismiss(id){ S.dismissed[id] = true; S.notifications = S.notifications.filter(n => n.id !== id); save(); render(); }
+function markPaid(cid, ym){ const c = byId(cid); const k = `${cid}_${ym}`; S.rents[k] = { status:'paid', paidAt: ymd(today()), amount: c.rent }; S.notifications.filter(n=>n.cid===cid&&n.ym===ym&&['due','bad'].includes(n.kind)).forEach(n=>S.dismissed[n.id]=true); save(); render(); toast(`${fmtYM(ym)} 임대료 입금 확인 완료`); }
+function openUnpaid(cid, ym){
+  const c = byId(cid); const r = S.rents[`${cid}_${ym}`] || {};
+  sheet(`<h2>미입금 처리 · ${esc(c.tenant)}</h2>
+  <div class="card"><div class="meta">${esc(c.name)} · ${fmtYM(ym)} 임대료</div><div class="num" style="font-size:22px;font-weight:600;margin:4px 0">${won(c.rent+vatOf(c))}</div><div class="meta">납부일 ${fmtD(dueDate(c,ym))} · 재알림 ${r.reminders||0}회</div></div>
+  <label class="f">재알림 시점</label>
+  <div class="chips" id="remChips">${[1,3,7,14].map(d=>`<span class="chip ${d===S.settings.remindDays?'on':''}" data-d="${d}" onclick="$$('#remChips .chip').forEach(x=>x.classList.remove('on'));this.classList.add('on')">${d}일 후</span>`).join('')}<span class="chip" data-d="custom" onclick="$$('#remChips .chip').forEach(x=>x.classList.remove('on'));this.classList.add('on');$('#remDate').hidden=false">날짜 지정</span></div>
+  <input type="date" id="remDate" hidden value="${ymd(addDays(today(),7))}">
+  <div class="btns"><button class="btn bad w" onclick="setUnpaid('${cid}','${ym}',false)">미입금으로 기록 · 재알림 예약</button></div>
+  <div class="btns"><button class="btn p w" onclick="setUnpaid('${cid}','${ym}',true)">미입금 기록 + 임차인에게 안내 문자</button></div>
+  <div class="note law">임차인 안내 문자는 <b>임대인 본인 명의·본인 휴대폰</b>에서 발송됩니다. 앱은 문구 작성과 발송 앱 연결(문자/카카오톡)만 수행하며 채권추심을 대행하지 않습니다.</div>`);
+}
+function setUnpaid(cid, ym, withMsg){
+  const sel = $('#remChips .chip.on'); let d = sel?.dataset.d; let remindAt = d==='custom' ? $('#remDate').value : ymd(addDays(today(), Number(d||S.settings.remindDays)));
+  const k = `${cid}_${ym}`; const prev = S.rents[k] || {}; S.rents[k] = { status:'unpaid', remindAt, reminders:(prev.reminders||0)+1, amount: byId(cid).rent };
+  S.notifications.filter(n=>n.cid===cid&&n.ym===ym&&['due','bad'].includes(n.kind)).forEach(n=>S.dismissed[n.id]=true);
+  save(); closeSheet(); if (withMsg) compose(cid, 'unpaid', ym); else { render(); toast(`${fmtD(remindAt)}에 다시 알려드립니다`); }
+}
+
+/* ---------- 계약 목록 / 등록 ---------- */
+function renderContracts(v){
+  const t = today();
+  v.innerHTML = `${demoBanner()}<div class="sub-h"><h2>임대 계약</h2><span class="pill pri">${S.contracts.length}건</span></div>
+  ${S.contracts.map(c => { const d = daysBetween(t, parseD(c.end)); const st = rentState(c, ymOf(t)); const exp = d<0?'<span class="pill bad">만료</span>':d<=90?`<span class="pill warn">만료 ${d}일 전</span>`:'<span class="pill ok">진행 중</span>';
+    return `<div class="card" onclick="openDetail('${c.id}')" style="cursor:pointer"><div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><div><h3>${esc(c.name)}</h3><div class="meta">${TYPES[c.type]} · ${c.area||'-'}㎡ · ${esc(c.addr)}</div></div>${exp}</div>
+    <div class="grid3" style="margin-top:10px"><div class="mini"><div class="l">보증금</div><div class="v num">${manwon(c.deposit)}</div></div><div class="mini"><div class="l">월 임대료${c.vatSeparate&&TAXABLE(c.type)?' (VAT별도)':''}</div><div class="v num">${manwon(c.rent)}</div></div><div class="mini"><div class="l">이번 달</div><div class="v"><span class="pill ${st.cls}">${st.label}</span></div></div></div>
+    <div class="meta" style="margin-top:8px">임차인 ${esc(c.tenant)} · ${fmtD(c.start)} ~ ${fmtD(c.end)} · 매월 ${c.payDay}일</div></div>`; }).join('') || '<div class="card"><div class="empty">아직 계약이 없습니다.<br>아래 버튼으로 계약서 사진을 올리거나 직접 입력하세요.</div></div>'}
+  <h2 class="sec">계약서 검토 기준</h2><div class="card note" style="margin-top:0">사진을 올리면 AI가 계약 당사자·기간·보증금·임대료·납부일·특약을 읽어 등록 양식을 채우고, 누락 항목과 위험 조항(부가세 별도 표기, 원상복구, 갱신 조건, 연체이자, 임대차 신고 의무 등)을 체크리스트로 알려줍니다. 결과는 참고용이며 최종 판단은 임대인·전문가가 합니다.</div>`;
+  const fab = document.createElement('button'); fab.className='fab'; fab.textContent='＋ 계약 추가'; fab.onclick = openAdd; document.body.appendChild(fab);
+}
+function openAdd(){
+  sheet(`<h2>계약 추가</h2>
+  <div class="card" style="text-align:center;padding:20px">
+    <div style="font-size:15px;font-weight:600">임대차계약서 사진으로 등록</div>
+    <div class="meta" style="margin:4px 0 12px">${CAP.images ? '촬영 또는 앨범에서 선택하면 AI가 내용을 읽고 검토합니다' : (CAP.sample ? '이 화면에서는 이미지 전송이 지원되지 않아 직접 입력으로 진행합니다' : 'AI 검토는 claude.ai에 로그인된 뷰어에서 제공됩니다. 지금은 직접 입력으로 진행합니다')}</div>
+    <input type="file" id="photo" accept="image/*" capture="environment" hidden ${CAP.images?'':'disabled'}>
+    <button class="btn acc w" ${CAP.images?'':'disabled'} onclick="$('#photo').click()">📷 계약서 촬영 / 업로드</button>
+    <label class="tw" style="margin-top:10px;font-size:13px"><input type="checkbox" id="autoReg" ${S.settings.autoRegister!==false?'checked':''} onchange="S.settings.autoRegister=this.checked;save()"> 판독 즉시 임대현황에 자동 등록 (나중에 수정 가능)</label>
+    <div id="aiStatus" class="note"></div>
+  </div>
+  <div class="btns"><button class="btn w" onclick="openForm()">직접 입력하기</button></div>`);
+  const inp = $('#photo'); if (inp) inp.onchange = () => inp.files[0] && analyzeContract(inp.files[0]);
+}
+async function analyzeContract(file){
+  const st = $('#aiStatus'); st.innerHTML = '<span class="spin"></span> AI가 계약서를 읽고 있습니다… (10~40초)';
+  const prompt = `당신은 한국 부동산 임대차계약서 검토 보조원입니다. 첨부된 계약서 사진(들)을 읽고 아래 JSON만 출력하세요(설명 금지, 코드블록 금지).
+{"name":"물건 짧은 이름(예: 테헤란로 상가 101호)","type":"shop|office|house|land|etc","addr":"소재지","area":숫자(㎡, 모르면 null),"tenant":"임차인 성명/상호","tenantPhone":"임차인 연락처 또는 빈문자열","tenantBiz":"임차인 사업자등록번호 또는 빈문자열","tenantBizName":"임차인 상호 또는 빈문자열","deposit":숫자(원),"rent":숫자(원, 월 임대료 공급가액),"mgmt":숫자(원, 관리비, 없으면 0),"vatSeparate":true|false(부가세 별도 명시 여부),"payDay":숫자(매월 납부일),"start":"YYYY-MM-DD","end":"YYYY-MM-DD","memo":"특약사항 요약(200자 이내)",
+"review":[{"level":"ok|warn|bad","item":"점검 항목","detail":"근거/제안 (60자 이내)"}]}
+review에는 최소 6개 항목: 당사자·물건 특정, 기간·갱신 조항, 보증금·임대료·납부일 명확성, 부가세 별도 표기(상가/사무실), 연체이자·해지 조건, 원상복구·수선 의무, 임대차 신고/확정일자(주택), 특약 위험요소. 읽을 수 없는 값은 null 또는 빈문자열로 두세요.`;
+  try {
+    const res = await CAP.sample(prompt, { images: file, modelTier:'complex' });
+    const txt = res.text.trim(); const m = txt.match(/\{[\s\S]*\}/); const data = JSON.parse(m ? m[0] : txt);
+    if (S.settings.autoRegister !== false && data.rent && data.start && data.end){
+      const c = { id:uid(), name:data.name||'이름 없는 물건', type:TYPES[data.type]?data.type:'etc', addr:data.addr||'', area:Number(data.area)||null, tenant:data.tenant||'', tenantPhone:data.tenantPhone||'', tenantBiz:data.tenantBiz||'', tenantBizName:data.tenantBizName||'', deposit:Number(data.deposit)||0, rent:Number(data.rent)||0, mgmt:Number(data.mgmt)||0, vatSeparate:!!data.vatSeparate, payDay:Math.min(31,Math.max(1,Number(data.payDay)||1)), start:data.start, end:data.end, memo:data.memo||'', review:Array.isArray(data.review)?data.review:null, quotes:[], autoRegistered:true };
+      S.contracts.push(c); if (c.tenantPhone) S.threads.push({ id:uid(), kind:'tenant', name:`${c.tenant} (${c.name})`, phone:c.tenantPhone, contractId:c.id, messages:[] });
+      S.demo = false; save(); closeSheet(); ui.detail = c.id; render();
+      toast('계약서를 판독해 임대현황에 등록했습니다. 내용을 확인하고 필요하면 수정하세요.');
+      return;
+    }
+    st.innerHTML = '<span class="pill ok">읽기 완료</span> 내용을 확인하고 저장하세요.';
+    setTimeout(() => openForm(null, data), 400);
+  } catch (e) {
+    console.warn(e); st.innerHTML = `<span class="pill bad">읽기 실패</span> ${esc(e.message||e.code||'')} · 직접 입력으로 진행해 주세요.`;
+  }
+}
+function openForm(id, pre){
+  const c = id ? byId(id) : Object.assign({ id:uid(), type:'shop', vatSeparate:true, payDay:25, mgmt:0, start: ymd(today()), end: ymd(addMonths(today(),24)), quotes:[], review:null }, pre||{});
+  if (pre && pre.review) c.review = pre.review;
+  const f = (k,label,type='text',extra='') => `<label class="f">${label}</label><input id="f_${k}" type="${type}" value="${esc(c[k] ?? '')}" ${extra}>`;
+  sheet(`<h2>${id?'계약 수정':'계약 등록'} ${pre?'<span class="ai">AI 판독 결과</span>':''}</h2>
+  ${f('name','물건 이름')}
+  <div class="row2"><div><label class="f">유형</label><select id="f_type">${Object.entries(TYPES).map(([k,v])=>`<option value="${k}" ${c.type===k?'selected':''}>${v}</option>`).join('')}</select></div><div>${f('area','전용면적(㎡)','number','step="0.1"')}</div></div>
+  ${f('addr','소재지')}
+  <div class="row2"><div>${f('tenant','임차인 성명')}</div><div>${f('tenantPhone','임차인 연락처','tel')}</div></div>
+  <div class="row2"><div>${f('tenantBizName','임차인 상호(세금계산서)')}</div><div>${f('tenantBiz','임차인 사업자번호')}</div></div>
+  <div class="row2"><div>${f('deposit','보증금(원)','number')}</div><div>${f('rent','월 임대료(원, 공급가액)','number')}</div></div>
+  <div class="row2"><div>${f('mgmt','관리비(원)','number')}</div><div>${f('payDay','납부일(매월 N일)','number','min="1" max="31"')}</div></div>
+  <div class="row2"><div>${f('start','계약 시작일','date')}</div><div>${f('end','계약 종료일','date')}</div></div>
+  <label class="tw" style="margin-top:12px"><input type="checkbox" id="f_vatSeparate" ${c.vatSeparate?'checked':''}> 부가세 별도 (세금계산서 발급 대상)</label>
+  <label class="f">특약 / 메모</label><textarea id="f_memo">${esc(c.memo||'')}</textarea>
+  ${c.review ? `<h2 class="sec">AI 계약서 검토 결과</h2><div class="card">${c.review.map(r=>`<div class="check"><div class="m ${r.level}">${r.level==='ok'?'✓':r.level==='warn'?'!':'✕'}</div><div><b>${esc(r.item)}</b><div class="meta">${esc(r.detail)}</div></div></div>`).join('')}</div>` : ''}
+  <div class="btns"><button class="btn p w" onclick="saveForm('${c.id}', ${!!id})">저장</button></div>`);
+  window._pendingReview = c.review || null; window._pendingQuotes = c.quotes || [];
+}
+function saveForm(id, editing){
+  const g = k => $('#f_'+k).value.trim(); const n = k => Number(g(k)||0);
+  const c = { id, name:g('name')||'이름 없는 물건', type:$('#f_type').value, area:n('area')||null, addr:g('addr'), tenant:g('tenant'), tenantPhone:g('tenantPhone'), tenantBizName:g('tenantBizName'), tenantBiz:g('tenantBiz'), deposit:n('deposit'), rent:n('rent'), mgmt:n('mgmt'), payDay:Math.min(31,Math.max(1,n('payDay')||1)), start:g('start'), end:g('end'), vatSeparate:$('#f_vatSeparate').checked, memo:g('memo'), review: window._pendingReview, quotes: window._pendingQuotes||[] };
+  if (!c.start || !c.end || c.end < c.start) return toast('계약 기간을 확인해 주세요');
+  if (editing){ const old = byId(id); Object.assign(old, c, { review: c.review || old.review, quotes: old.quotes }); } else { S.contracts.push(c); if (c.tenantPhone) S.threads.push({ id:uid(), kind:'tenant', name:`${c.tenant} (${c.name})`, phone:c.tenantPhone, contractId:c.id, messages:[] }); }
+  if (S.demo && !editing){ /* 첫 실제 등록 시 예시 데이터 정리 안내 */ }
+  save(); closeSheet(); ui.detail = c.id; render(); toast(editing?'계약을 수정했습니다':'계약을 등록했습니다');
+}
+function deleteContract(id){ if(!confirm('이 계약과 관련 기록을 삭제할까요?')) return; S.contracts = S.contracts.filter(c=>c.id!==id); Object.keys(S.rents).filter(k=>k.startsWith(id+'_')).forEach(k=>delete S.rents[k]); Object.keys(S.invoices).filter(k=>k.startsWith(id+'_')).forEach(k=>delete S.invoices[k]); ui.detail=null; save(); render(); }
+
+/* ---------- 계약 상세 ---------- */
+function openDetail(id){ ui.detail = id; render(); }
+function renderDetail(v, c){
+  if (!c){ ui.detail=null; return render(); }
+  const t = today(); const rw = renewalWindow(c); const d = daysBetween(t, parseD(c.end));
+  const months = monthsOf(c).reverse();
+  const myPer = c.area ? c.rent / c.area : null;
+  const quotes = (c.quotes||[]).slice().sort((a,b)=>b.at.localeCompare(a.at));
+  const qa = quotes.filter(q=>q.area&&q.rent); const avgPer = qa.length ? qa.reduce((a,q)=>a+q.rent/q.area,0)/qa.length : null;
+  v.innerHTML = `<div class="sub-h"><button class="back" onclick="ui.detail=null;render()">‹</button><h2>${esc(c.name)}</h2><button class="btn sm" onclick="openForm('${c.id}')">수정</button></div>
+  ${c.autoRegistered?`<div class="banner"><b>AI 자동 등록</b> 계약서 사진에서 읽은 값입니다. 금액·기간·납부일을 확인해 주세요. <button class="btn sm" onclick="byId('${c.id}').autoRegistered=false;save();render()">확인 완료</button></div>`:''}
+  <div class="card"><div class="meta">${TYPES[c.type]} · ${c.area||'-'}㎡ · ${esc(c.addr)}</div>
+    <div class="grid3" style="margin-top:10px"><div class="mini"><div class="l">보증금</div><div class="v num">${manwon(c.deposit)}</div></div><div class="mini"><div class="l">월 임대료</div><div class="v num">${manwon(c.rent)}</div></div><div class="mini"><div class="l">${TAXABLE(c.type)?'부가세':'과세구분'}</div><div class="v num">${TAXABLE(c.type)?(c.vatSeparate?won(vatOf(c)):'포함/미표기'):'면세(주택)'}</div></div></div>
+    <div class="meta" style="margin-top:10px">임차인 <b>${esc(c.tenant)}</b> ${c.tenantBizName?`· ${esc(c.tenantBizName)} (${esc(c.tenantBiz)})`:''}<br>${fmtD(c.start)} ~ ${fmtD(c.end)} · 매월 ${c.payDay}일 납부 ${c.mgmt?`· 관리비 ${manwon(c.mgmt)}`:''}</div>
+    ${c.memo?`<div class="note">📝 ${esc(c.memo)}</div>`:''}
+    <div class="btns"><button class="btn" onclick="compose('${c.id}','free')">임차인 문자</button><button class="btn" onclick="openRenew('${c.id}')">재계약/연장</button><button class="btn" onclick="openExpire('${c.id}')">만료·중개 의뢰</button></div></div>
+  <h2 class="sec">만료 타임라인 <span class="pill ${d<0?'bad':d<=90?'warn':'ok'}" style="float:right">${d<0?'만료됨':'만료 '+d+'일 전'}</span></h2>
+  <div class="card"><div class="timeline">
+    ${[[rw.open,'갱신요구 가능기간 시작 (만료 6개월 전)','key'],[rw.close,`임대인 갱신거절·조건변경 통지기한 (만료 ${c.type==='house'?'2개월':'1개월'} 전)`,'key'],[rw.end,'계약 만료일','key']].map(([dt,l,k])=>`<div class="tl ${dt<t?'past':''} ${Math.abs(daysBetween(t,dt))<=3?'now':k}"><div class="dt">${fmtD(dt)} · D${daysBetween(t,dt)>=0?'-':'+'}${Math.abs(daysBetween(t,dt))}</div>${l}</div>`).join('')}
+  </div><div class="note law">근거: ${rw.law}. 통지기한 내 갱신거절·조건변경 통지가 없으면 동일 조건으로 갱신된 것으로 봅니다(묵시적 갱신). 실제 적용은 전문가 확인이 필요합니다.</div></div>
+  <h2 class="sec">임대료 납부 이력</h2>
+  <div class="card tbwrap"><table class="tb"><thead><tr><th>월</th><th>납부일</th><th class="r">금액</th><th>상태</th><th></th></tr></thead><tbody>
+  ${months.map(ym => { const st = rentState(c, ym); const k=`${c.id}_${ym}`; return `<tr><td>${fmtYM(ym).replace('년 ','.')}</td><td class="num">${fmtD(st.due).slice(5)}</td><td class="r num">${manwon(c.rent+vatOf(c))}</td><td><span class="pill ${st.cls}">${st.label}</span></td><td style="text-align:right;white-space:nowrap">${st.code==='paid'?`<button class="btn sm" onclick="delete S.rents['${k}'];save();render()">취소</button>`:`<button class="btn ok sm" onclick="markPaid('${c.id}','${ym}')">입금</button> <button class="btn bad sm" onclick="openUnpaid('${c.id}','${ym}')">미납</button>`}</td></tr>`; }).join('')}
+  </tbody></table></div>
+  <h2 class="sec">주변 시세 비교 <button class="r" onclick="openQuote('${c.id}')">시세 추가</button></h2>
+  <div class="card">
+    <div class="grid3"><div class="mini"><div class="l">내 임대료/㎡</div><div class="v num">${myPer?Math.round(myPer/1000).toLocaleString()+'천원':'-'}</div></div><div class="mini"><div class="l">주변 평균/㎡</div><div class="v num">${avgPer?Math.round(avgPer/1000).toLocaleString()+'천원':'-'}</div></div><div class="mini"><div class="l">차이</div><div class="v num" style="color:${myPer&&avgPer?(myPer>avgPer?'var(--ok)':'var(--bad)'):'inherit'}">${myPer&&avgPer?((myPer/avgPer-1)*100).toFixed(1)+'%':'-'}</div></div></div>
+    ${quotes.length?`<div style="margin-top:8px">${quotes.map(q=>`<div class="item"><div class="b"><div class="t" style="font-size:13.5px">${esc(q.src)} <span class="meta">${fmtD(q.at)}</span></div><div class="d num">보증금 ${manwon(q.deposit)} / 월 ${manwon(q.rent)} ${q.area?`· ${q.area}㎡`:''}</div></div></div>`).join('')}</div>`:'<div class="empty">수집된 시세가 없습니다</div>'}
+    <div class="btns"><button class="btn sm" onclick="compose('${c.id}','quote')">중개사에 시세 문의</button><button class="btn sm" onclick="openLinks('${c.id}')">실거래가·지도 열기</button></div>
+    <div class="note">실거래가는 국토교통부 실거래가 공개시스템(rt.molit.go.kr)·한국부동산원 R-ONE 상업용부동산 임대동향을 기준으로 확인하세요. 실서비스에서는 공공데이터 API로 지도 위에 자동 표시됩니다.</div>
+  </div>
+  ${c.review?`<h2 class="sec">계약서 검토 결과 <span class="ai" style="float:right">AI 판독</span></h2><div class="card">${c.review.map(r=>`<div class="check"><div class="m ${r.level}">${r.level==='ok'?'✓':r.level==='warn'?'!':'✕'}</div><div><b>${esc(r.item)}</b><div class="meta">${esc(r.detail)}</div></div></div>`).join('')}</div>`:''}
+  <div class="btns" style="margin-top:18px"><button class="btn bad" onclick="deleteContract('${c.id}')">계약 삭제</button></div>`;
+}
+function openLinks(id){ const c = byId(id); const q = encodeURIComponent(c.addr||c.name);
+  sheet(`<h2>시세 확인 바로가기</h2><div class="card">
+  <a class="btn w" style="margin-bottom:8px;text-decoration:none" target="_blank" rel="noopener" href="https://rt.molit.go.kr/">국토교통부 실거래가 공개시스템</a>
+  <a class="btn w" style="margin-bottom:8px;text-decoration:none" target="_blank" rel="noopener" href="https://www.reb.or.kr/r-one/">한국부동산원 R-ONE (상업용 임대동향)</a>
+  <a class="btn w" style="margin-bottom:8px;text-decoration:none" target="_blank" rel="noopener" href="https://map.naver.com/p/search/${q}">네이버 지도에서 주변 보기</a>
+  <a class="btn w" style="text-decoration:none" target="_blank" rel="noopener" href="https://hogangnono.com/">호갱노노 (아파트 시세)</a>
+  <div class="note">외부 사이트는 새 창으로 열립니다. 확인한 시세는 "시세 추가"로 기록하면 내 임대료와 자동 비교됩니다.</div></div>`); }
+function openQuote(id){ sheet(`<h2>주변 시세 기록</h2><label class="f">출처</label><input id="q_src" placeholder="예: OO공인중개사 문의, 실거래가 공개시스템"><div class="row2"><div><label class="f">보증금(원)</label><input id="q_dep" type="number"></div><div><label class="f">월세(원)</label><input id="q_rent" type="number"></div></div><div class="row2"><div><label class="f">면적(㎡)</label><input id="q_area" type="number" step="0.1"></div><div><label class="f">기준일</label><input id="q_at" type="date" value="${ymd(today())}"></div></div><div class="btns"><button class="btn p w" onclick="addQuote('${id}')">저장</button></div>`); }
+function addQuote(id){ const c = byId(id); c.quotes = c.quotes||[]; c.quotes.push({ src:$('#q_src').value||'직접 입력', deposit:Number($('#q_dep').value||0), rent:Number($('#q_rent').value||0), area:Number($('#q_area').value||0)||null, at:$('#q_at').value||ymd(today()) }); save(); closeSheet(); render(); toast('시세를 기록했습니다'); }
+function openRenew(id){ const c = byId(id);
+  sheet(`<h2>재계약 / 연장</h2><div class="card"><div class="meta">${esc(c.name)} · 현재 ${fmtD(c.start)} ~ ${fmtD(c.end)}</div></div>
+  <div class="row2"><div><label class="f">새 종료일</label><input id="r_end" type="date" value="${ymd(addMonths(parseD(c.end),24))}"></div><div><label class="f">새 월 임대료(원)</label><input id="r_rent" type="number" value="${c.rent}"></div></div>
+  <label class="f">새 보증금(원)</label><input id="r_dep" type="number" value="${c.deposit}">
+  <div class="note law">${c.type==='house' ? '주택: 갱신요구권 행사 시 임대료 증액은 직전 임대료의 5% 이내(주택임대차보호법 §7·§6의3③).' : '상가: 증액 청구는 청구 당시 임대료의 5% 이내(상가건물 임대차보호법 §11, 시행령 §4).'} 인상률 ${(($('#r_rent')?.value||c.rent)/c.rent*100-100).toFixed(1)}% — 저장 시 자동 검사됩니다.</div>
+  <div class="btns"><button class="btn" onclick="closeSheet();compose('${c.id}','expiry')">임차인에게 갱신 의사 문의</button><button class="btn p" onclick="applyRenew('${c.id}')">연장 반영</button></div>`); }
+function applyRenew(id){ const c = byId(id); const rent = Number($('#r_rent').value||c.rent); const inc = rent/c.rent-1; if (inc > 0.05 && !confirm(`인상률 ${(inc*100).toFixed(1)}%가 법정 상한(5%)을 넘습니다. 그대로 반영할까요?`)) return; c.end = $('#r_end').value; c.rent = rent; c.deposit = Number($('#r_dep').value||c.deposit); Object.keys(S.dismissed).filter(k=>k.startsWith(`exp-${id}`)).forEach(k=>delete S.dismissed[k]); save(); closeSheet(); render(); toast('계약 연장을 반영했습니다'); }
+function openExpire(id){ const c = byId(id);
+  sheet(`<h2>만료 진행 · 중개 의뢰</h2><div class="card"><div class="meta">지정 중개사무소</div><div style="font-weight:600">${esc(S.broker.office||'미지정')} ${S.broker.name?`· ${esc(S.broker.name)}`:''}</div><div class="meta num">${esc(S.broker.phone||'연락처 없음 — 설정에서 등록')}</div></div>
+  <div class="note" style="margin:10px 0">아래 의뢰 문자가 임대인 명의로 준비됩니다. 중개사무소가 새 임차인을 찾고 중개하도록 물건 정보를 전달합니다.</div>
+  <textarea id="x_msg">${esc(tplBroker(c))}</textarea>
+  <div class="btns"><button class="btn" onclick="closeSheet();compose('${c.id}','expiry')">임차인에게 만료 안내</button><button class="btn acc" onclick="sendTo('broker','${c.id}',$('#x_msg').value)">중개사무소에 보내기</button></div>`); }
+</script>
+<script>
+/* ---------- 메시지 (DM) ---------- */
+function threadFor(kind, c){
+  let th = S.threads.find(t => t.kind===kind && (kind==='tenant' ? t.contractId===c?.id : true));
+  if (!th){ th = { id:uid(), kind, contractId: c?.id||'', name: kind==='tenant'?`${c.tenant} (${c.name})`: kind==='broker'?(S.broker.office||'중개사무소'):`${S.taxAgent.name||'세무사'} (${S.taxAgent.office||''})`, phone: kind==='tenant'?c.tenantPhone: kind==='broker'?S.broker.phone:S.taxAgent.phone, messages:[] }; S.threads.push(th); }
+  return th;
+}
+function compose(cid, kind, ym){
+  const c = byId(cid); const text = kind==='unpaid'?tplUnpaid(c, ym): kind==='expiry'?tplExpiry(c): kind==='quote'?tplQuote(c): kind==='broker'?tplBroker(c):'';
+  const to = kind==='quote'||kind==='broker' ? 'broker' : 'tenant';
+  sheet(`<h2>${to==='tenant'?'임차인에게 문자':'중개사무소에 문자'}</h2>
+  <div class="meta">받는 사람: <b>${esc(to==='tenant'?`${c.tenant} ${c.tenantPhone||''}`:`${S.broker.office||''} ${S.broker.phone||''}`)}</b> · 보내는 사람: ${esc(S.landlord.name)} (본인 휴대폰)</div>
+  <div class="chips">${[['unpaid','미납 안내'],['expiry','만료·갱신 문의'],['quote','시세 문의'],['broker','중개 의뢰'],['free','직접 작성']].map(([k,l])=>`<span class="chip ${k===kind?'on':''}" onclick="compose('${cid}','${k}','${ym||ymOf(today())}')">${l}</span>`).join('')}</div>
+  <textarea id="m_text" style="min-height:170px">${esc(text)}</textarea>
+  ${CAP.sample?`<div class="btns"><button class="btn sm" onclick="polish()"><span class="ai">✦ AI로 더 정중하게 다듬기</span></button></div>`:''}
+  <div class="btns"><button class="btn p" onclick="sendTo('${to}','${cid}',$('#m_text').value,'sms')">문자 앱으로 보내기</button><button class="btn" onclick="sendTo('${to}','${cid}',$('#m_text').value,'share')">카카오톡/공유</button><button class="btn" onclick="sendTo('${to}','${cid}',$('#m_text').value,'copy')">복사</button></div>
+  <div class="note law">문자는 임대인 본인 번호로 발송되며 발송 기록이 메시지 탭에 저장됩니다. 임대인 대신 제3자가 반복적으로 변제를 촉구하면 채권추심업(신용정보법 §2 10호) 규제 대상이 될 수 있어, 앱은 도구로만 동작합니다.</div>`);
+}
+async function polish(){ const ta = $('#m_text'); const orig = ta.value; ta.value = '다듬는 중…'; try { const r = await CAP.sample(`다음 문자를 한국어로, 임대인이 임차인/중개사에게 보내는 정중하고 간결한 안내문으로 다듬어 주세요. 법적 위협·강압 표현 없이 사실과 요청만 담고, 결과 문장만 출력:\n\n${orig}`, { modelTier:'quick' }); ta.value = r.text.trim(); } catch(e){ ta.value = orig; toast('AI 다듬기를 사용할 수 없습니다'); } }
+async function sendTo(to, cid, text, how){
+  const c = byId(cid); const th = threadFor(to, c); const phone = (th.phone||'').replace(/[^0-9+]/g,'');
+  how = how || 'sms'; let via = '문자';
+  if (how==='copy'){ try { await navigator.clipboard.writeText(text); toast('복사했습니다'); } catch(e){ toast('복사 실패'); } via='복사'; }
+  else if (how==='share' && navigator.share){ try { await navigator.share({ text }); via='공유'; } catch(e){ if (e.name==='AbortError') return; } }
+  else { const url = `sms:${phone}${/iPhone|iPad/.test(navigator.userAgent)?'&':'?'}body=${encodeURIComponent(text)}`; window.open(url, '_blank') || (location.href = url); }
+  th.messages.push({ dir:'out', text, at:nowStr(), via }); save(); closeSheet(); ui.thread = th.id; ui.tab='msgs'; render();
+}
+function renderMsgs(v){
+  v.innerHTML = `<div class="sub-h"><h2>메시지</h2><button class="btn sm" onclick="newThread()">＋ 대화</button></div>
+  <div class="card">${S.threads.length ? S.threads.slice().sort((a,b)=>(b.messages.at(-1)?.at||'').localeCompare(a.messages.at(-1)?.at||'')).map(t => { const last = t.messages.at(-1); return `<div class="item" style="cursor:pointer" onclick="ui.thread='${t.id}';render()"><div class="ic ${t.kind==='tenant'?'ok':t.kind==='broker'?'exp':'inv'}">${{tenant:'임',broker:'중',tax:'세'}[t.kind]}</div><div class="b"><div class="t">${esc(t.name)}</div><div class="d" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${last?esc(last.text.replace(/\n/g,' ')):'대화 없음'}</div></div><div class="meta" style="white-space:nowrap">${last?esc(last.at.slice(5,10)):''}</div></div>`; }).join('') : '<div class="empty">대화가 없습니다</div>'}</div>
+  <div class="note" style="margin-top:12px">임차인·공인중개사·세무사와의 연락을 한 곳에 기록합니다. 현재 버전은 본인 휴대폰의 문자/카카오톡/이메일 앱으로 발송하고 그 기록을 남기는 방식이며, 상대방이 임대지기 앱을 쓰면 앱 안에서 실시간 DM으로 연결됩니다(2단계).</div>`;
+}
+function newThread(){ sheet(`<h2>새 대화</h2><label class="f">상대 유형</label><select id="n_kind"><option value="tenant">임차인</option><option value="broker">공인중개사</option><option value="tax">세무사</option></select><label class="f">이름/상호</label><input id="n_name"><label class="f">연락처</label><input id="n_phone" type="tel"><div class="btns"><button class="btn p w" onclick="S.threads.push({id:uid(),kind:$('#n_kind').value,name:$('#n_name').value||'이름 없음',phone:$('#n_phone').value,contractId:'',messages:[]});save();closeSheet();render()">만들기</button></div>`); }
+function renderThread(v, t){
+  if (!t){ ui.thread=null; return render(); }
+  v.innerHTML = `<div class="sub-h"><button class="back" onclick="ui.thread=null;render()">‹</button><h2 style="font-size:16px">${esc(t.name)}</h2>${t.phone?`<a class="btn sm" href="tel:${esc(t.phone)}">통화</a>`:''}</div>
+  <div style="display:flex;flex-direction:column">${t.messages.length?t.messages.map(m=>`<div class="msg ${m.dir}">${esc(m.text)}<span class="at">${esc(m.at)} · ${esc(m.via||'')}${m.dir==='out'?' 발신':' 수신'}</span></div>`).join(''):'<div class="empty">아직 메시지가 없습니다</div>'}</div>
+  <div class="card" style="margin-top:12px"><textarea id="t_text" placeholder="메시지 입력"></textarea>
+  <div class="btns"><button class="btn p" onclick="threadSend('${t.id}','sms')">문자로 보내기</button><button class="btn" onclick="threadSend('${t.id}','share')">공유</button><button class="btn" onclick="threadRecv('${t.id}')">받은 답장 기록</button></div></div>`;
+}
+async function threadSend(id, how){ const t = S.threads.find(x=>x.id===id); const text = $('#t_text').value.trim(); if(!text) return; const phone=(t.phone||'').replace(/[^0-9+]/g,''); let via='문자';
+  if (how==='share' && navigator.share){ try{ await navigator.share({text}); via='공유'; }catch(e){ if(e.name==='AbortError') return; } } else { const url=`sms:${phone}${/iPhone|iPad/.test(navigator.userAgent)?'&':'?'}body=${encodeURIComponent(text)}`; window.open(url,'_blank')||(location.href=url); }
+  t.messages.push({dir:'out',text,at:nowStr(),via}); save(); render(); }
+function threadRecv(id){ const t = S.threads.find(x=>x.id===id); const text = $('#t_text').value.trim(); if(!text) return toast('받은 내용을 입력 후 눌러주세요'); t.messages.push({dir:'in',text,at:nowStr(),via:'기록'}); save(); render(); }
+
+/* ---------- 세무 탭 ---------- */
+function renderTax(v){
+  const tabs = [['invoice','세금계산서'],['vat','부가세 예상'],['share','세무사 공유']];
+  v.innerHTML = `<div class="sub-h"><h2>세무</h2><span class="seg">${tabs.map(([k,l])=>`<button class="${ui.taxTab===k?'on':''}" onclick="ui.taxTab='${k}';render()">${l}</button>`).join('')}</span></div><div id="taxBody"></div>`;
+  ({invoice:renderInvoices, vat:renderVat, share:renderShare})[ui.taxTab]($('#taxBody'));
+}
+function invoiceRows(ym){
+  return S.contracts.filter(c => TAXABLE(c.type) && ym >= c.start.slice(0,7) && ym <= c.end.slice(0,7)).map(c => {
+    const k = `${c.id}_${ym}`; const inv = S.invoices[k] || {}; const supply = c.rent; const vat = Math.round(supply*0.1);
+    return { c, k, inv, supply, vat, total: supply+vat, date: ymd(dueDate(c, ym)) };
+  });
+}
+function renderInvoices(v){
+  const ym = ui.invYM; const rows = invoiceRows(ym); const [y,m] = ym.split('-').map(Number);
+  const deadline = new Date(y, m, 10); const p = periodOf(ym);
+  v.innerHTML = `<div class="card" style="display:flex;align-items:center;gap:8px"><button class="btn sm" onclick="ui.invYM=ymOf(addMonths(parseD('${ym}-01'),-1));render()">‹</button><div style="flex:1;text-align:center;font-weight:600">${fmtYM(ym)} 임대료분</div><button class="btn sm" onclick="ui.invYM=ymOf(addMonths(parseD('${ym}-01'),1));render()">›</button></div>
+  <div class="note" style="margin:8px 2px">공급시기: 임대료를 받기로 한 날(부가가치세법 시행령 §29①) · 발급기한: 공급시기가 속한 달의 다음 달 10일 <b class="num">(${fmtD(deadline)})</b> · 전자발급 의무: 법인 및 직전연도 공급가액(면세 포함) 8천만원 이상 개인사업자(시행령 §68)</div>
+  ${rows.length ? rows.map(r => `<div class="invoice" style="margin-bottom:10px">
+    <div class="hd"><b>${esc(r.c.tenantBizName||r.c.tenant)}</b>${r.inv.issued?`<div class="seal">발급<br>완료</div>`:`<span class="pill warn">발급 대기</span>`}</div>
+    <dl><dt>공급자</dt><dd>${esc(S.landlord.bizName||S.landlord.name)} (${esc(S.landlord.bizNo||'사업자번호 미등록')})</dd><dt>공급받는자</dt><dd>${esc(r.c.tenantBizName||r.c.tenant)} (${esc(r.c.tenantBiz||'번호 없음')})</dd><dt>작성일자</dt><dd class="num">${fmtD(r.date)}</dd><dt>품목</dt><dd>${esc(r.c.name)} ${fmtYM(ym)} 임대료</dd><dt>공급가액</dt><dd class="num">${won(r.supply)}</dd><dt>세액</dt><dd class="num">${won(r.vat)}</dd></dl>
+    <div class="tot"><span>합계</span><span class="num">${won(r.total)}</span></div>
+    ${r.inv.issued?`<div class="meta" style="margin-top:6px">승인번호 ${esc(r.inv.no||'-')} · ${fmtD(r.inv.issuedAt)} 발급 ${r.inv.no?'':'(수기 확인)'}</div><div class="btns"><button class="btn sm" onclick="delete S.invoices['${r.k}'];save();render()">발급 취소</button></div>`:`<div class="btns"><button class="btn acc sm" onclick="markIssued('${r.k}')">발급 완료 표시</button><a class="btn sm" target="_blank" rel="noopener" href="https://www.hometax.go.kr" style="text-decoration:none">홈택스 열기</a></div>`}
+    ${!r.c.tenantBiz?'<div class="note" style="color:var(--bad)">임차인 사업자등록번호가 없어 세금계산서를 발급할 수 없습니다. 계약 정보를 보완하세요.</div>':''}
+  </div>`).join('') : '<div class="card"><div class="empty">이 달에 발급할 세금계산서가 없습니다 (주택임대는 면세)</div></div>'}
+  <div class="btns"><button class="btn w" onclick="exportInvoices('${ym}')">이 달 발급자료 내려받기 (CSV)</button></div>
+  <h2 class="sec">간주임대료 · ${p.label}</h2>
+  <div class="card tbwrap"><table class="tb"><thead><tr><th>물건</th><th class="r">보증금</th><th class="r">간주임대료</th><th class="r">세액</th></tr></thead><tbody>
+  ${S.contracts.filter(c=>TAXABLE(c.type)).map(c=>{ const d = deemedRent(c,p); return `<tr><td>${esc(c.name)}</td><td class="r num">${manwon(c.deposit)}</td><td class="r num">${won(d)}</td><td class="r num">${won(Math.round(d*0.1))}</td></tr>`; }).join('')}
+  </tbody></table><div class="note">보증금 × 정기예금이자율 <b>${S.settings.deemedRate}%</b>(설정에서 변경) × 임대일수 ÷ 365. 간주임대료는 세금계산서 발급 대상이 아니며(발급의무 면제) 부가세 신고서에 직접 반영합니다. 적용 이자율은 매년 고시되므로 신고 전 국세청 고시를 확인하세요.</div></div>`;
+}
+function markIssued(k){ sheet(`<h2>발급 완료 표시</h2><div class="note">홈택스 또는 발급대행(ASP)에서 발급한 뒤 승인번호를 입력하세요. 비워두면 수기 확인으로 기록됩니다.</div><label class="f">승인번호</label><input id="i_no" placeholder="예: 20260903-41000000-12345678"><label class="f">발급일</label><input id="i_at" type="date" value="${ymd(today())}"><div class="btns"><button class="btn acc w" onclick="S.invoices['${k}']={issued:true,no:$('#i_no').value,issuedAt:$('#i_at').value};S.dismissed['inv-${k}']=true;save();closeSheet();render();toast('발급 완료로 표시했습니다')">저장</button></div>`); }
+function csvOf(rows, header){ const esc2 = s => `"${String(s??'').replace(/"/g,'""')}"`; return '﻿' + [header, ...rows].map(r=>r.map(esc2).join(',')).join('\r\n'); }
+async function exportInvoices(ym){
+  const rows = invoiceRows(ym);
+  const csv = csvOf(rows.map(r => ['01', r.date.replace(/-/g,''), S.landlord.bizNo, S.landlord.bizName||S.landlord.name, S.landlord.name, S.landlord.addr, '부동산임대', r.c.tenantBiz, r.c.tenantBizName||r.c.tenant, r.c.tenant, r.c.addr, `${r.c.name} ${fmtYM(ym)} 임대료`, r.supply, r.vat, r.total, '02']),
+    ['종류(01일반)','작성일자','공급자등록번호','공급자상호','공급자성명','공급자주소','업태종목','공급받는자등록번호','공급받는자상호','공급받는자성명','공급받는자주소','품목','공급가액','세액','합계','영수청구(02청구)']);
+  await saveFile(`세금계산서_${ym}.csv`, csv, '홈택스 일괄발급(엑셀) 양식으로 항목을 옮겨 붙일 수 있는 자료입니다.');
+}
+async function saveFile(filename, data, hint){
+  if (CAP.downloads){ try { await CAP.downloads.save({ filename, data }); toast(`${filename} 저장 요청`); return; } catch(e){ if (e.code==='rejected'||e.code==='cancelled') return; } }
+  sheet(`<h2>${esc(filename)}</h2><div class="note">${esc(hint||'')} 이 화면에서는 파일 저장이 지원되지 않아 내용을 표시합니다. 전체 선택 후 복사하세요.</div><textarea style="min-height:260px;font-family:IBM Plex Mono,monospace;font-size:11.5px" readonly>${esc(data)}</textarea><div class="btns"><button class="btn p w" onclick="navigator.clipboard.writeText(window._lastFile).then(()=>toast('복사했습니다'))">복사</button></div>`); window._lastFile = data;
+}
+function renderVat(v){
+  const cur = periodOf(ymOf(today())); const per = ui.vatPer || `${cur.y}-${cur.h}`; const [py,ph] = per.split('-').map(Number); const p = periodOf(`${py}-${ph===1?'01':'07'}`); const e = vatEstimate(p);
+  const opts = []; for (let i=-2;i<=1;i++){ const q = periodOf(ymOf(addMonths(today(), i*6))); opts.push(q); }
+  v.innerHTML = `<div class="card"><label class="f">과세기간</label><select onchange="ui.vatPer=this.value;render()">${opts.map(q=>`<option value="${q.y}-${q.h}" ${`${q.y}-${q.h}`===per?'selected':''}>${q.label} · 신고납부 ${fmtD(q.due)}</option>`).join('')}</select>
+    <label class="f">과세유형</label><span class="seg"><button class="${!e.simple?'on':''}" onclick="S.landlord.taxType='general';save();render()">일반과세자</button><button class="${e.simple?'on':''}" onclick="S.landlord.taxType='simple';save();render()">간이과세자</button></span></div>
+  <div class="kpis" style="margin-top:10px"><div class="kpi"><div class="l">임대료 공급가액</div><div class="v num">${manwon(e.supply)}</div></div><div class="kpi"><div class="l">간주임대료</div><div class="v num">${manwon(e.deemed)}</div></div><div class="kpi"><div class="l">${e.simple?'납부세액(부가가치율 40%)':'매출세액'}</div><div class="v num">${manwon(e.outputVat)}</div></div><div class="kpi ${e.payable?'bad':''}"><div class="l">예상 납부세액</div><div class="v num">${manwon(e.payable)}</div></div></div>
+  ${!e.simple?`<div class="card" style="margin-top:10px"><label class="f">매입세액 (이 기간 세금계산서 수취분, 원)</label><input type="number" value="${e.inputVat}" onchange="S.settings.purchaseVat['${py}-${ph}']=Number(this.value||0);save();render()"><div class="note">건물 관리비·수선비·중개수수료 등 매입세금계산서의 세액 합계를 입력하면 납부세액에 반영됩니다.</div></div>`:''}
+  <h2 class="sec">물건별 내역</h2><div class="card tbwrap"><table class="tb"><thead><tr><th>물건</th><th class="r">개월</th><th class="r">임대료</th><th class="r">간주임대료</th><th class="r">세액</th></tr></thead><tbody>${e.rows.map(r=>`<tr><td>${esc(r.c.name)}</td><td class="r num">${r.months}</td><td class="r num">${manwon(r.supply)}</td><td class="r num">${manwon(r.deemed)}</td><td class="r num">${manwon(r.vat)}</td></tr>`).join('')}</tbody></table>
+  <div class="note">주택임대(면세)는 제외됩니다. 일반과세자는 4월·10월 예정고지(직전기 납부세액의 50%)가 있을 수 있어 확정신고 시 기납부세액으로 차감됩니다. 간이과세자는 부동산임대업 업종 부가가치율 40%를 적용한 단순 추정치입니다. 정확한 세액은 담당 세무사가 확정합니다.</div></div>`;
+}
+function renderShare(v){
+  const a = S.taxAgent;
+  v.innerHTML = `<div class="card"><h3>지정 세무사</h3><div class="meta">${esc(a.name||'미지정')} · ${esc(a.office||'')}<br>${esc(a.email||'')} ${a.phone?`· ${esc(a.phone)}`:''}</div>${a.shared?`<div class="pill ok" style="margin-top:6px">데이터 공유 동의 ${esc(a.sharedAt)}</div>`:''}<div class="btns"><button class="btn sm" onclick="openSettings('tax')">세무사 정보 수정</button></div></div>
+  <h2 class="sec">공유 범위</h2>
+  <div class="card">
+    <label class="tw" style="display:flex;padding:6px 0"><input type="checkbox" id="s_c" checked> 임대 계약 현황 (물건·임차인·보증금·임대료·기간)</label>
+    <label class="tw" style="display:flex;padding:6px 0"><input type="checkbox" id="s_r" checked> 월별 임대료 수납 내역</label>
+    <label class="tw" style="display:flex;padding:6px 0"><input type="checkbox" id="s_i" checked> 세금계산서 발급 내역 · 간주임대료 계산</label>
+    <label class="tw" style="display:flex;padding:6px 0"><input type="checkbox" id="s_v" checked> 부가세 예상 계산 · 매입세액 입력값</label>
+    <div class="note law" style="margin-top:10px">임차인의 성명·연락처·사업자번호가 포함되므로, 세무대리(신고 위임) 목적 범위에서 세무사에게 제공됩니다. 세무사는 세무사법 §11에 따라 비밀을 유지할 의무가 있습니다. 아래 동의 후 자료가 생성됩니다.</div>
+    <label class="tw" style="display:flex;margin-top:10px"><input type="checkbox" id="s_ok" ${a.shared?'checked':''}> 위 자료를 지정 세무사에게 제공하는 것에 동의합니다</label>
+    <div class="btns"><button class="btn p" onclick="makeShare('file')">공유 파일 만들기 (JSON+CSV)</button><button class="btn" onclick="makeShare('mail')">이메일로 보내기</button></div>
+  </div>
+  <h2 class="sec">신고 일정</h2>
+  <div class="card" style="font-size:13.5px">
+    <div class="check"><div class="m ok">1</div><div><b>부가가치세 확정신고</b> 1기: 7월 25일 · 2기: 다음 해 1월 25일 (일반과세자). 간이과세자는 다음 해 1월 25일 연 1회.</div></div>
+    <div class="check"><div class="m ok">2</div><div><b>사업장현황신고</b> (주택임대 등 면세사업자) 다음 해 2월 10일까지.</div></div>
+    <div class="check"><div class="m ok">3</div><div><b>종합소득세</b> 5월 1일~31일 (성실신고확인대상자는 6월 30일). 주택임대소득 2천만원 이하는 분리과세 선택 가능.</div></div>
+  </div>`;
+}
+async function makeShare(how){
+  if (!$('#s_ok').checked) return toast('자료 제공 동의에 체크해 주세요');
+  S.taxAgent.shared = true; S.taxAgent.sharedAt = ymd(today()); save();
+  const pkg = { generatedAt: nowStr(), app:'임대지기', landlord: S.landlord, taxAgent: {name:S.taxAgent.name, office:S.taxAgent.office},
+    contracts: $('#s_c').checked ? S.contracts.map(c=>({...c, review:undefined})) : undefined,
+    rents: $('#s_r').checked ? Object.entries(S.rents).map(([k,r])=>{ const [cid,ym]=k.split('_'); const c=byId(cid); return { contract:c?.name, tenant:c?.tenant, month:ym, due: c?ymd(dueDate(c,ym)):'', status:r.status, paidAt:r.paidAt||'', amount:c?.rent }; }).sort((a,b)=>a.month.localeCompare(b.month)) : undefined,
+    invoices: $('#s_i').checked ? Object.entries(S.invoices).map(([k,i])=>{ const [cid,ym]=k.split('_'); const c=byId(cid); return { contract:c?.name, buyer:c?.tenantBizName||c?.tenant, buyerBizNo:c?.tenantBiz, month:ym, supply:c?.rent, vat:Math.round((c?.rent||0)*0.1), issued:i.issued, no:i.no||'', issuedAt:i.issuedAt||'' }; }) : undefined,
+    deemedRent: $('#s_i').checked ? [periodOf(ymOf(addMonths(today(),-6))), periodOf(ymOf(today()))].map(p=>({ period:p.label, rate:S.settings.deemedRate, rows:S.contracts.filter(c=>TAXABLE(c.type)).map(c=>({contract:c.name, deposit:c.deposit, deemed:deemedRent(c,p)})) })) : undefined,
+    vat: $('#s_v').checked ? (()=>{ const p=periodOf(ymOf(today())); const e=vatEstimate(p); return { period:p.label, supply:e.supply, deemed:e.deemed, outputVat:e.outputVat, inputVat:e.inputVat, payable:e.payable, taxType:S.landlord.taxType }; })() : undefined };
+  if (how==='mail'){ const body = tplTax() + '\n\n(첨부: 임대지기 공유 파일)'; location.href = `mailto:${encodeURIComponent(S.taxAgent.email||'')}?subject=${encodeURIComponent(`[임대지기] ${S.landlord.name} 임대현황 자료 ${ymd(today())}`)}&body=${encodeURIComponent(body)}`; threadFor('tax').messages.push({dir:'out', text: body, at: nowStr(), via:'이메일'}); save(); toast('이메일 앱을 열었습니다. 공유 파일을 첨부하세요.'); return; }
+  const rentsCsv = pkg.rents ? csvOf(pkg.rents.map(r=>[r.contract,r.tenant,r.month,r.due,r.status,r.paidAt,r.amount]), ['물건','임차인','귀속월','납부일','상태','입금일','임대료']) : null;
+  await saveFile(`임대현황_${S.landlord.name}_${ymd(today())}.json`, JSON.stringify(pkg, null, 2), '세무사 사무실 프로그램에 불러올 수 있는 구조화 자료입니다.');
+  if (rentsCsv) setTimeout(()=>saveFile(`임대료수납_${ymd(today())}.csv`, rentsCsv), 600);
+}
+
+/* ---------- 설정 ---------- */
+function openSettings(focus){
+  const L = S.landlord, A = S.taxAgent, B = S.broker, T = S.settings;
+  sheet(`<h2>설정</h2>
+  <details class="acc" ${focus==='me'||!focus?'open':''}><summary>임대인 · 사업자 정보</summary>
+    <div class="row2"><div><label class="f">성명</label><input id="l_name" value="${esc(L.name)}"></div><div><label class="f">휴대폰</label><input id="l_phone" value="${esc(L.phone)}"></div></div>
+    <div class="row2"><div><label class="f">상호</label><input id="l_bizName" value="${esc(L.bizName)}"></div><div><label class="f">사업자등록번호</label><input id="l_bizNo" value="${esc(L.bizNo)}"></div></div>
+    <label class="f">사업장 주소</label><input id="l_addr" value="${esc(L.addr)}"><label class="f">이메일</label><input id="l_email" value="${esc(L.email||'')}"></details>
+  <details class="acc" ${focus==='tax'?'open':''}><summary>지정 세무사</summary>
+    <div class="row2"><div><label class="f">세무사</label><input id="a_name" value="${esc(A.name)}"></div><div><label class="f">사무소</label><input id="a_office" value="${esc(A.office)}"></div></div>
+    <div class="row2"><div><label class="f">이메일</label><input id="a_email" value="${esc(A.email)}"></div><div><label class="f">연락처</label><input id="a_phone" value="${esc(A.phone)}"></div></div></details>
+  <details class="acc" ${focus==='broker'?'open':''}><summary>지정 공인중개사무소</summary>
+    <div class="row2"><div><label class="f">사무소명</label><input id="b_office" value="${esc(B.office)}"></div><div><label class="f">담당자</label><input id="b_name" value="${esc(B.name)}"></div></div>
+    <label class="f">연락처</label><input id="b_phone" value="${esc(B.phone)}"></details>
+  <details class="acc"><summary>알림 · 세무 기준값</summary>
+    <div class="row2"><div><label class="f">미입금 기본 재알림(일)</label><input id="t_remind" type="number" value="${T.remindDays}"></div><div><label class="f">간주임대료 이자율(%)</label><input id="t_rate" type="number" step="0.1" value="${T.deemedRate}"></div></div>
+    <div class="note">간주임대료 이자율은 매년 국세청 고시(부가가치세법 시행규칙)로 바뀝니다. 신고 전 확인 후 갱신하세요.</div></details>
+  <details class="acc"><summary>데이터 · 동기화</summary>
+    <label class="tw" style="display:flex;padding:8px 0"><input type="checkbox" id="t_cloud" ${T.cloudSync?'checked':''} ${CAP.db?'':'disabled'}> 클라우드 동기화 ${CAP.db?'(이 조직 내 기기 간 공유)':'(로그인 뷰어에서만 가능)'}</label>
+    <div class="btns"><button class="btn" onclick="saveFile('임대지기_백업_${ymd(today())}.json', JSON.stringify(S,null,2))">백업 내려받기</button><button class="btn" onclick="$('#restore').click()">백업 복원</button></div>
+    <input type="file" id="restore" accept="application/json" hidden onchange="restoreFile(this.files[0])">
+    <div class="btns"><button class="btn bad w" onclick="localStorage.removeItem(KEY);location.reload()">모든 데이터 초기화 (예시로 복원)</button></div></details>
+  <div class="btns"><button class="btn p w" onclick="saveSettings()">저장</button></div>
+  <div class="note" style="text-align:center;margin-top:14px">임대지기 프로토타입 v0.9 · 대한세무법인</div>`);
+}
+function saveSettings(){ const g = id => $('#'+id).value.trim();
+  Object.assign(S.landlord, { name:g('l_name'), phone:g('l_phone'), bizName:g('l_bizName'), bizNo:g('l_bizNo'), addr:g('l_addr'), email:g('l_email') });
+  Object.assign(S.taxAgent, { name:g('a_name'), office:g('a_office'), email:g('a_email'), phone:g('a_phone') });
+  Object.assign(S.broker, { office:g('b_office'), name:g('b_name'), phone:g('b_phone') });
+  S.settings.remindDays = Number(g('t_remind')||3); S.settings.deemedRate = Number(g('t_rate')||3.1); S.settings.cloudSync = $('#t_cloud').checked;
+  save(); closeSheet(); render(); toast('설정을 저장했습니다'); }
+function restoreFile(f){ if(!f) return; const r = new FileReader(); r.onload = () => { try { S = Object.assign(defaults(), JSON.parse(r.result)); save(); closeSheet(); render(); toast('복원했습니다'); } catch(e){ toast('파일을 읽을 수 없습니다'); } }; r.readAsText(f); }
+
+/* ---------- 공통 UI ---------- */
+function sheet(html){ $('#sheet').innerHTML = `<div class="grip"></div>${html}`; $('#modal').classList.add('open'); }
+function closeSheet(){ $('#modal').classList.remove('open'); }
+$('#modal').addEventListener('click', e => { if (e.target.id==='modal') closeSheet(); });
+let toastT; function toast(m){ const t = $('#toast'); t.textContent = m; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(()=>t.classList.remove('show'), 2400); }
+function go(tab){ ui.tab = tab; ui.detail = null; ui.thread = null; render(); }
+$$('#tabs button').forEach(b => b.onclick = () => go(b.dataset.tab));
+$('#bellBtn').onclick = () => go('alerts');
+$('#gearBtn').onclick = () => openSettings();
+window.addEventListener('resize', () => { if ($('#chart')) drawChart(); });
+
+/* ---------- 런타임 능력 (claude.ai 뷰어) ---------- */
+(async () => {
+  render();
+  if (!window.claude || !window.claude.use) return;
+  try { CAP.sample = await claude.use('sample'); if (CAP.sample){ try { const lim = await CAP.sample.limits(); CAP.images = !!lim?.images; } catch(e){} } } catch(e){}
+  try { CAP.downloads = await claude.use('downloads'); } catch(e){}
+  try { CAP.db = await claude.use('db'); if (CAP.db && S.settings.cloudSync) cloudPull(); } catch(e){}
+})();
+</script>
