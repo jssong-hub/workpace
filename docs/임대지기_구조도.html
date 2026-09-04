@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>임대지기 판독 구조</title>
+<style>
+body{margin:0;padding:24px;background:#F6F7F9;font-family:"Malgun Gothic","Apple SD Gothic Neo",sans-serif;color:#1c2833}
+h1{font-size:20px;margin:0 0 6px}
+p.sub{margin:0 0 18px;color:#5b6b78;font-size:14px}
+svg{width:100%;max-width:980px;height:auto;display:block;background:#fff;border:1px solid #e1e6ea;border-radius:14px}
+.legend{max-width:980px;margin-top:16px;display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.card{background:#fff;border:1px solid #e1e6ea;border-radius:12px;padding:14px 16px;font-size:13.5px;line-height:1.55}
+.card b{display:block;font-size:15px;margin-bottom:6px}
+.c1 b{color:#1F3A4D}.c2 b{color:#249e6b}.c3 b{color:#1a73e8}
+@media(max-width:720px){.legend{grid-template-columns:1fr}}
+</style></head><body>
+<h1>임대지기 계약서 판독 — 누가 무슨 일을 하나</h1>
+<p class="sub">임대인은 사진만 찍습니다. 나머지는 회사가 한 번 만들어 둔 회사 서버와 판독 AI가 처리합니다.</p>
+<svg viewBox="0 0 980 420" xmlns="http://www.w3.org/2000/svg" font-family="Malgun Gothic, Apple SD Gothic Neo, sans-serif">
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#64748b"/></marker>
+  </defs>
+  <!-- 1 phone -->
+  <rect x="40" y="90" width="230" height="230" rx="16" fill="#E9EEF3" stroke="#1F3A4D" stroke-width="2"/>
+  <text x="155" y="70" text-anchor="middle" font-size="15" font-weight="700" fill="#1F3A4D">① 임대인 스마트폰</text>
+  <text x="155" y="130" text-anchor="middle" font-size="34">📱</text>
+  <text x="155" y="170" text-anchor="middle" font-size="14" font-weight="700" fill="#1c2833">임대지기 앱</text>
+  <text x="155" y="192" text-anchor="middle" font-size="12.5" fill="#5b6b78">(GitHub Pages에 올린 화면)</text>
+  <text x="155" y="230" text-anchor="middle" font-size="13" fill="#1c2833">계약서 사진 찍기</text>
+  <text x="155" y="252" text-anchor="middle" font-size="13" fill="#1c2833">결과 받아서 임대현황 등록</text>
+  <text x="155" y="290" text-anchor="middle" font-size="12" fill="#1F8A5B" font-weight="700">설정할 것 없음</text>
+
+  <!-- 2 cloudflare -->
+  <rect x="375" y="90" width="230" height="230" rx="16" fill="#EAF8F1" stroke="#3ECF8E" stroke-width="2"/>
+  <text x="490" y="70" text-anchor="middle" font-size="15" font-weight="700" fill="#249e6b">② Supabase 서버 · 서울 (접수 창구)</text>
+  <text x="490" y="130" text-anchor="middle" font-size="34">🏢</text>
+  <text x="490" y="170" text-anchor="middle" font-size="14" font-weight="700" fill="#1c2833">우리 회사 서버</text>
+  <text x="490" y="192" text-anchor="middle" font-size="12.5" fill="#5b6b78">(회사 Supabase, Edge Function)</text>
+  <text x="490" y="230" text-anchor="middle" font-size="13" fill="#1c2833">사진 받기 → AI에 전달</text>
+  <text x="490" y="252" text-anchor="middle" font-size="13" fill="#1c2833">🔑 AI 열쇠를 비밀값으로 보관</text>
+  <text x="490" y="274" text-anchor="middle" font-size="13" fill="#1c2833">우리 앱에서 온 요청만 허용</text>
+  <text x="490" y="300" text-anchor="middle" font-size="12" fill="#5b6b78">사진 저장 안 함</text>
+
+  <!-- 3 google -->
+  <rect x="710" y="90" width="230" height="230" rx="16" fill="#EAF2FE" stroke="#1a73e8" stroke-width="2"/>
+  <text x="825" y="70" text-anchor="middle" font-size="15" font-weight="700" fill="#1a73e8">③ 판독 AI (판독 전문가)</text>
+  <text x="825" y="130" text-anchor="middle" font-size="34">🧠</text>
+  <text x="825" y="170" text-anchor="middle" font-size="14" font-weight="700" fill="#1c2833">Gemini(데모) → Upstage(실서비스)</text>
+  <text x="825" y="192" text-anchor="middle" font-size="12.5" fill="#5b6b78">(엔진은 비밀값으로 교체)</text>
+  <text x="825" y="230" text-anchor="middle" font-size="13" fill="#1c2833">사진 속 글자·표 읽기</text>
+  <text x="825" y="252" text-anchor="middle" font-size="13" fill="#1c2833">보증금·임대료·기간·임차인 추출</text>
+  <text x="825" y="274" text-anchor="middle" font-size="13" fill="#1c2833">위험 조항 점검표 작성</text>
+  <text x="825" y="300" text-anchor="middle" font-size="12" fill="#5b6b78">열쇠(API 키)로만 입장 가능</text>
+
+  <!-- arrows -->
+  <line x1="275" y1="170" x2="368" y2="170" stroke="#64748b" stroke-width="2.5" marker-end="url(#ar)"/>
+  <text x="322" y="158" text-anchor="middle" font-size="12" fill="#1c2833">📷 사진</text>
+  <line x1="368" y1="240" x2="275" y2="240" stroke="#64748b" stroke-width="2.5" marker-end="url(#ar)"/>
+  <text x="322" y="262" text-anchor="middle" font-size="12" fill="#1c2833">📋 계약 정보</text>
+  <line x1="610" y1="170" x2="703" y2="170" stroke="#64748b" stroke-width="2.5" marker-end="url(#ar)"/>
+  <text x="657" y="158" text-anchor="middle" font-size="12" fill="#1c2833">사진 + 🔑 + 항목표</text>
+  <line x1="703" y1="240" x2="610" y2="240" stroke="#64748b" stroke-width="2.5" marker-end="url(#ar)"/>
+  <text x="657" y="262" text-anchor="middle" font-size="12" fill="#1c2833">읽은 결과</text>
+
+  <!-- bottom band -->
+  <rect x="40" y="350" width="900" height="50" rx="10" fill="#F6F7F9" stroke="#e1e6ea"/>
+  <text x="490" y="371" text-anchor="middle" font-size="13" fill="#1c2833" font-weight="700">회사가 한 번만 하는 일</text>
+  <text x="490" y="390" text-anchor="middle" font-size="12.5" fill="#5b6b78">③ 열쇠 발급 → ② 코드 배포·비밀값 등록 → ① 앱에 ②의 주소 한 줄 — 이후 손댈 일 없음 (2단계: ②에 로그인·DB 추가)</text>
+</svg>
+<div class="legend">
+  <div class="card c1"><b>① 앱 (임대인)</b>사진을 찍어 ②로 보내고, 돌아온 계약 정보를 임대현황에 등록합니다. 로그인·설정·비용 전혀 없음.</div>
+  <div class="card c2"><b>② Supabase = 접수 창구 (+ 앞으로 로그인·DB)</b>AI 열쇠를 앱 안에 두면 누구나 꺼내 쓸 수 있어 위험합니다. 열쇠는 이 서버의 비밀값에 두고, 앱은 서버에만 사진을 건넵니다. 서버가 열쇠를 들고 AI에 다녀옵니다. 회사가 이미 쓰는 Supabase라 2단계 로그인·데이터 저장도 같은 곳에서 합니다.</div>
+  <div class="card c3"><b>③ 판독 AI = 판독 전문가</b>실제로 사진을 읽는 두뇌입니다. 데모는 무료 Google Gemini, 실서비스는 국내 Upstage로 비밀값만 바꿔 교체합니다. 폰에는 AI가 필요 없어 어떤 폰이든 같은 결과입니다.</div>
+</div>
+</body></html>
