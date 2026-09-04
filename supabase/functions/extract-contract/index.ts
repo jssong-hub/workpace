@@ -11,6 +11,10 @@
 //   UPSTAGE_ENDPOINT  (선택)  기본 https://api.upstage.ai/v1/information-extraction/chat/completions
 //   ENGINE            (선택)  gemini | upstage
 //   ALLOWED_ORIGINS   (선택)  허용할 앱 주소, 쉼표 구분. 예: https://jssong-hub.github.io  (비우면 모두 허용)
+//   REQUIRE_AUTH      (선택)  "false" 로 두면 로그인 없이 호출 허용(개발용). 기본은 로그인 필수.
+//   SUPABASE_URL / SUPABASE_ANON_KEY 는 Supabase가 자동 제공 (로그인 토큰 검증에 사용)
+
+import { createClient } from "npm:@supabase/supabase-js@2";
 
 const UPSTAGE_ENDPOINT = Deno.env.get("UPSTAGE_ENDPOINT") ??
   "https://api.upstage.ai/v1/information-extraction/chat/completions";
@@ -180,6 +184,21 @@ Deno.serve(async (req) => {
   if (req.method === "GET") return json({ ok: true, service: "rentkeeper-extract", engine: pickEngine()?.name ?? "none" }, 200, c.headers);
   if (req.method !== "POST") return json({ error: "POST만 지원합니다" }, 405, c.headers);
   if (!c.ok) return json({ error: "허용되지 않은 출처입니다" }, 403, c.headers);
+
+  // 로그인 검증: 앱이 보낸 Authorization: Bearer <access_token> 을 Supabase Auth 로 확인
+  let userId: string | null = null;
+  const requireAuth = (Deno.env.get("REQUIRE_AUTH") ?? "true").toLowerCase() !== "false";
+  const authHeader = req.headers.get("Authorization") ?? "";
+  const sbUrl = Deno.env.get("SUPABASE_URL") ?? "", sbAnon = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+  let userClient: ReturnType<typeof createClient> | null = null;
+  if (authHeader.startsWith("Bearer ") && sbUrl && sbAnon) {
+    try {
+      userClient = createClient(sbUrl, sbAnon, { global: { headers: { Authorization: authHeader } } });
+      const { data: { user }, error } = await userClient.auth.getUser(authHeader.slice(7));
+      if (!error && user) userId = user.id; else userClient = null;
+    } catch (_) { userClient = null; }
+  }
+  if (requireAuth && !userId) return json({ error: "로그인이 필요합니다. 앱에서 다시 로그인해 주세요" }, 401, c.headers);
   const engine = pickEngine();
   if (!engine) return json({ error: "서버에 판독 키(GEMINI_API_KEY 또는 UPSTAGE_API_KEY)가 설정되지 않았습니다" }, 500, c.headers);
 
@@ -194,6 +213,11 @@ Deno.serve(async (req) => {
     if (total > MAX_TOTAL_BASE64) return json({ error: "사진 용량이 너무 큽니다. 장수를 줄여 주세요" }, 413, c.headers);
   }
 
+  const t0 = Date.now();
+  const logIt = async (ok: boolean, err?: string) => {
+    if (!userClient || !userId) return;
+    try { await userClient.from("extract_logs").insert({ user_id: userId, engine: engine.name, pages: images.length, ok, error: err ?? null, ms: Date.now() - t0 }); } catch (_) { /* 로그 실패는 무시 */ }
+  };
   try {
     let raw: Record<string, any>;
     try { raw = await engine.call(images); }
@@ -206,8 +230,10 @@ Deno.serve(async (req) => {
         if (!Object.keys(raw).length) throw e;
       } else throw e;
     }
+    await logIt(true);
     return json({ ok: true, data: toApp(raw), engine: engine.name }, 200, c.headers);
   } catch (e) {
+    await logIt(false, (e as Error).message);
     return json({ error: (e as Error).message || "판독 실패" }, 502, c.headers);
   }
 });

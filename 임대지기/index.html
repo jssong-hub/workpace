@@ -6,6 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="mobile-web-app-capable" content="yes">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <title>임대지기</title>
 <meta name="theme-color" content="#1F3A4D">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
@@ -164,6 +165,18 @@ details.acc summary:after{content:"+";color:var(--faint)} details.acc[open] summ
 .sub-h{display:flex;align-items:center;gap:10px;margin-bottom:12px}
 .sub-h h2{margin:0;font-size:18px;font-weight:600;flex:1}
 .back{border:0;background:var(--surface);width:36px;height:36px;border-radius:10px;cursor:pointer;box-shadow:var(--shadow);font-size:18px}
+/* 로그인 */
+#login{position:fixed;inset:0;z-index:70;background:var(--bg);display:none;align-items:center;justify-content:center;padding:24px}
+#login.open{display:flex}
+#login .box{width:100%;max-width:380px}
+#login .logo{width:64px;height:64px;border-radius:16px;background:var(--accent);display:grid;place-items:center;font-weight:700;color:#1B1408;font-size:24px;margin:0 auto 12px}
+#login h1{text-align:center;font-size:22px;margin:0 0 4px}
+#login .sub{text-align:center;color:var(--muted);font-size:13.5px;margin-bottom:22px}
+#login .card{padding:18px 16px}
+#login .kakao{background:#FEE500;color:#191919;border:0;font-weight:600}
+#login .msg{min-height:20px;font-size:13px;color:var(--bad);text-align:center;margin-top:8px}
+.syncdot{display:inline-block;width:8px;height:8px;border-radius:4px;background:var(--faint);margin-left:6px;vertical-align:middle}
+.syncdot.ok{background:var(--ok)} .syncdot.busy{background:var(--warn)} .syncdot.err{background:var(--bad)}
 /* 계약서 사진 */
 .pstrip{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
 .pth{position:relative;aspect-ratio:3/4;border-radius:10px;overflow:hidden;background:var(--surface2);border:1px solid var(--line)}
@@ -178,6 +191,17 @@ details.acc summary:after{content:"+";color:var(--faint)} details.acc[open] summ
 </style>
 </head>
 <body>
+<div id="login" role="dialog" aria-modal="true"><div class="box">
+  <div class="logo">지기</div><h1>임대지기</h1><div class="sub">임대현황 · 임대료 · 세금계산서를 한 곳에서</div>
+  <div class="card">
+    <div id="loginKakao" hidden><button class="btn kakao w" type="button" onclick="authKakao()">카카오로 시작하기</button><div class="meta" style="text-align:center;margin:10px 0">또는 이메일로</div></div>
+    <label class="f">이메일</label><input id="l_email" type="email" autocomplete="username" placeholder="name@example.com">
+    <label class="f">비밀번호 (6자 이상)</label><input id="l_pw" type="password" autocomplete="current-password" placeholder="••••••">
+    <div class="row2" style="margin-top:14px"><button class="btn p" type="button" onclick="authEmail('in')">로그인</button><button class="btn" type="button" onclick="authEmail('up')">회원가입</button></div>
+    <div class="msg" id="loginMsg"></div>
+  </div>
+  <div class="note" style="text-align:center;margin-top:14px">로그인하면 임대현황이 회사 서버(서울)에 안전하게 저장되어 폰을 바꿔도 이어서 쓸 수 있습니다.</div>
+</div></div>
 <div id="app">
   <header class="top">
     <div class="logo">지기</div>
@@ -277,6 +301,7 @@ function save(){
   let ok = true;
   try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e){ ok = false; console.warn('save', e); }
   if (CAP.db && S.settings.cloudSync){ clearTimeout(saveTimer); saveTimer = setTimeout(()=>cloudPush(), 800); }
+  if (SB && USER){ clearTimeout(saveTimer); saveTimer = setTimeout(()=>syncPush(), 900); }
   return ok;
 }
 async function cloudPush(){
@@ -533,7 +558,8 @@ async function addPhotos(files, after){
 }
 function photoStrip(list, removable){
   if (!list || !list.length) return '';
-  return `<div class="pstrip">${list.map((u,i)=>`<div class="pth"><img src="${u}" alt="계약서 ${i+1}" onclick="viewPhoto(${JSON.stringify(list).replace(/"/g,'&quot;')}, ${i})">${removable?`<button type="button" aria-label="삭제" onclick="PH.splice(${i},1);renderPhotoStrip()">×</button>`:''}</div>`).join('')}</div>`;
+  setTimeout(hydratePhotos, 0);
+  return `<div class="pstrip">${list.map((u,i)=>`<div class="pth"><img ${u.startsWith('sb:')?`data-sb="${u.slice(3)}" src=""`:`src="${u}"`} alt="계약서 ${i+1}" onclick="viewPhoto(${JSON.stringify(list).replace(/"/g,'&quot;')}, ${i})">${removable?`<button type="button" aria-label="삭제" onclick="PH.splice(${i},1);renderPhotoStrip()">×</button>`:''}</div>`).join('')}</div>`;
 }
 function renderPhotoStrip(){
   const box = $('#photoBox'); if (!box) return;
@@ -545,10 +571,10 @@ function renderPhotoStrip(){
 function viewPhoto(list, i){
   let idx = i;
   const ov = document.createElement('div'); ov.className = 'pview';
-  const draw = () => { ov.innerHTML = `<div class="pv-top"><span>${idx+1} / ${list.length}</span><button type="button" aria-label="닫기">✕</button></div><div class="pv-body"><img src="${list[idx]}" alt=""></div>${list.length>1?`<div class="pv-nav"><button type="button" data-d="-1">‹ 이전</button><button type="button" data-d="1">다음 ›</button></div>`:''}`;
+  const draw = () => { ov.innerHTML = `<div class="pv-top"><span>${idx+1} / ${list.length}</span><button type="button" aria-label="닫기">✕</button></div><div class="pv-body"><img ${list[idx].startsWith('sb:')?`data-sb="${list[idx].slice(3)}" src=""`:`src="${list[idx]}"`} alt=""></div>${list.length>1?`<div class="pv-nav"><button type="button" data-d="-1">‹ 이전</button><button type="button" data-d="1">다음 ›</button></div>`:''}`;
     ov.querySelector('.pv-top button').onclick = () => ov.remove();
     ov.querySelectorAll('.pv-nav button').forEach(b => b.onclick = () => { idx = (idx + Number(b.dataset.d) + list.length) % list.length; draw(); }); };
-  draw(); document.body.appendChild(ov);
+  draw(); document.body.appendChild(ov); setTimeout(hydratePhotos, 0);
 }
 function openAdd(){
   PH = [];
@@ -659,7 +685,9 @@ function parseContractText(raw){
 function extractMode(){ return CAP.images ? 'viewer' : (EXTRACT_SERVER ? 'server' : 'none'); }
 async function extractViaServer(){
   let r, j;
-  try { r = await fetch(EXTRACT_SERVER.replace(/\/+$/,'') + '/', { method:'POST', headers:{ 'content-type':'application/json' }, body: JSON.stringify({ images: PH }) }); }
+  const headers = { 'content-type':'application/json' };
+  if (SB){ const { data:{ session } } = await SB.auth.getSession(); if (session){ headers['Authorization'] = 'Bearer ' + session.access_token; headers['apikey'] = SUPABASE_ANON_KEY; } }
+  try { r = await fetch(EXTRACT_SERVER.replace(/\/+$/,'') + '/', { method:'POST', headers, body: JSON.stringify({ images: PH }) }); }
   catch(e){ throw new Error('판독 서버에 연결할 수 없습니다. 인터넷 연결을 확인하세요'); }
   try { j = await r.json(); } catch(e){ throw new Error(`서버 응답 오류 (${r.status})`); }
   if (!r.ok || !j.ok) throw new Error(j.error || `서버 오류 ${r.status}`);
@@ -685,6 +713,7 @@ async function analyzeContract(){
       S.contracts.push(c); if (c.tenantPhone) S.threads.push({ id:uid(), kind:'tenant', name:`${c.tenant} (${c.name})`, phone:c.tenantPhone, contractId:c.id, messages:[] });
       S.demo = false; save(); closeSheet(); ui.detail = c.id; render();
       toast('계약서를 판독해 임대현황에 등록했습니다. 금액·기간을 확인해 주세요.');
+      persistPhotos(c);
       return;
     }
     st.innerHTML = `<span class="pill ${complete?'ok':'warn'}">${complete?'읽기 완료':'일부만 읽음'}</span> 읽은 값을 채운 양식이 열립니다. 빈칸을 채우고 저장하세요.`;
@@ -730,6 +759,7 @@ function saveForm(id, editing){
   if (S.demo && !editing){ /* 첫 실제 등록 시 예시 데이터 정리 안내 */ }
   if (!save()) toast('저장 공간이 부족해 사진 일부가 저장되지 않을 수 있습니다. 사진 수를 줄여 주세요.');
   closeSheet(); ui.detail = c.id; render(); toast(editing?'계약을 수정했습니다':'계약을 등록했습니다');
+  persistPhotos(byId(id));
 }
 function deleteContract(id){ if(!confirm('이 계약과 관련 기록을 삭제할까요?')) return; S.contracts = S.contracts.filter(c=>c.id!==id); Object.keys(S.rents).filter(k=>k.startsWith(id+'_')).forEach(k=>delete S.rents[k]); Object.keys(S.invoices).filter(k=>k.startsWith(id+'_')).forEach(k=>delete S.invoices[k]); ui.detail=null; save(); render(); }
 
@@ -940,7 +970,7 @@ function openSettings(focus){
     <div class="row2"><div><label class="f">미입금 기본 재알림(일)</label><input id="t_remind" type="number" value="${T.remindDays}"></div><div><label class="f">간주임대료 이자율(%)</label><input id="t_rate" type="number" step="0.1" value="${T.deemedRate}"></div></div>
     <div class="note">간주임대료 이자율은 매년 국세청 고시(부가가치세법 시행규칙)로 바뀝니다. 신고 전 확인 후 갱신하세요.</div></details>
   <details class="acc"><summary>데이터 · 동기화</summary>
-    <label class="tw" style="display:flex;padding:8px 0"><input type="checkbox" id="t_cloud" ${T.cloudSync?'checked':''} ${CAP.db?'':'disabled'}> 클라우드 동기화 ${CAP.db?'(이 조직 내 기기 간 공유)':'(로그인 뷰어에서만 가능)'}</label>
+    ${USER ? `<div class="meta" style="padding:6px 0">계정 <b>${esc(USER.email||USER.user_metadata?.name||'')}</b> · 회사 서버(서울) 자동 저장 <span class="syncdot ${SYNC.state}"></span> ${SYNC.at?('마지막 저장 '+SYNC.at.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})):''}</div><div class="btns"><button class="btn" type="button" onclick="syncPush(true)">지금 저장</button><button class="btn" type="button" onclick="authSignOut()">로그아웃</button></div>` : `<label class="tw" style="display:flex;padding:8px 0"><input type="checkbox" id="t_cloud" ${T.cloudSync?'checked':''} ${CAP.db?'':'disabled'}> 클라우드 동기화 ${CAP.db?'(이 조직 내 기기 간 공유)':'(로그인 뷰어에서만 가능)'}</label>`}
     <div class="btns"><button class="btn" onclick="saveFile('임대지기_백업_${ymd(today())}.json', JSON.stringify(S,null,2))">백업 내려받기</button><button class="btn" onclick="$('#restore').click()">백업 복원</button></div>
     <input type="file" id="restore" accept="application/json" hidden onchange="restoreFile(this.files[0])">
     <div class="btns"><button class="btn bad w" onclick="localStorage.removeItem(KEY);location.reload()">모든 데이터 초기화 (예시로 복원)</button></div></details>
@@ -949,9 +979,10 @@ function openSettings(focus){
 }
 function saveSettings(){ const g = id => $('#'+id).value.trim();
   Object.assign(S.landlord, { name:g('l_name'), phone:g('l_phone'), bizName:g('l_bizName'), bizNo:g('l_bizNo'), addr:g('l_addr'), email:g('l_email') });
+  if (SB && USER) SB.from('profiles').upsert({ id: USER.id, name: S.landlord.name, phone: S.landlord.phone }).then(()=>{}, e=>console.warn('profile', e));
   Object.assign(S.taxAgent, { name:g('a_name'), office:g('a_office'), email:g('a_email'), phone:g('a_phone') });
   Object.assign(S.broker, { office:g('b_office'), name:g('b_name'), phone:g('b_phone') });
-  S.settings.remindDays = Number(g('t_remind')||3); S.settings.deemedRate = Number(g('t_rate')||3.1); S.settings.cloudSync = $('#t_cloud').checked;
+  S.settings.remindDays = Number(g('t_remind')||3); S.settings.deemedRate = Number(g('t_rate')||3.1); if ($('#t_cloud')) S.settings.cloudSync = $('#t_cloud').checked;
   save(); closeSheet(); render(); toast('설정을 저장했습니다'); }
 function restoreFile(f){ if(!f) return; const r = new FileReader(); r.onload = () => { try { S = Object.assign(defaults(), JSON.parse(r.result)); save(); closeSheet(); render(); toast('복원했습니다'); } catch(e){ toast('파일을 읽을 수 없습니다'); } }; r.readAsText(f); }
 
@@ -966,9 +997,117 @@ $('#bellBtn').onclick = () => go('alerts');
 $('#gearBtn').onclick = () => openSettings();
 window.addEventListener('resize', () => { if ($('#chart')) drawChart(); });
 
+
+/* ---------- 로그인 · 회사 서버 저장 (Supabase) ---------- */
+const SUPABASE_URL = 'https://lezpolceeqhdsgekidzi.supabase.co';
+const SUPABASE_ANON_KEY = '';                       // 운영자 1회 입력: Supabase → Project Settings → API Keys (publishable/anon)
+const AUTH_PROVIDERS = { email: true, kakao: false }; // 카카오 준비되면 kakao: true
+let SB = null, USER = null, SYNC = { state:'', at:null, pushing:false };
+const PHOTO_URL_CACHE = {};
+
+function authAvailable(){ return !!(SUPABASE_ANON_KEY && window.supabase && window.supabase.createClient); }
+function showLogin(on){ const el = $('#login'); if (!el) return; el.classList.toggle('open', !!on); $('#app').style.visibility = on ? 'hidden' : ''; if (on){ $('#loginKakao').hidden = !AUTH_PROVIDERS.kakao; } }
+function loginMsg(t, ok){ const m = $('#loginMsg'); if (m){ m.textContent = t || ''; m.style.color = ok ? 'var(--ok)' : 'var(--bad)'; } }
+async function authEmail(mode){
+  const email = $('#l_email').value.trim(), pw = $('#l_pw').value;
+  if (!email || pw.length < 6) return loginMsg('이메일과 6자 이상 비밀번호를 입력하세요');
+  loginMsg('잠시만…', true);
+  try {
+    if (mode === 'up'){
+      const { data, error } = await SB.auth.signUp({ email, password: pw });
+      if (error) throw error;
+      if (!data.session) return loginMsg('가입 확인 메일을 보냈습니다. 메일의 링크를 누른 뒤 로그인하세요', true);
+    } else {
+      const { error } = await SB.auth.signInWithPassword({ email, password: pw });
+      if (error) throw error;
+    }
+  } catch(e){ loginMsg(/Invalid login/i.test(e.message) ? '이메일 또는 비밀번호가 맞지 않습니다' : /already registered/i.test(e.message) ? '이미 가입된 이메일입니다. 로그인해 주세요' : (e.message || '로그인 실패')); }
+}
+async function authKakao(){
+  try { const { error } = await SB.auth.signInWithOAuth({ provider:'kakao', options:{ redirectTo: location.origin + location.pathname } }); if (error) throw error; }
+  catch(e){ loginMsg(e.message || '카카오 로그인 실패'); }
+}
+async function authSignOut(){ if (!SB) return; await syncPush(true); await SB.auth.signOut(); USER = null; localStorage.removeItem(KEY); S = load(); closeSheet(); render(); showLogin(true); }
+
+async function onSignedIn(user){
+  USER = user; showLogin(false);
+  // 다른 계정의 로컬 데이터는 섞지 않음
+  if (S._owner && S._owner !== user.id){ S = seedDemoRents(defaults()); }
+  S._owner = user.id;
+  await syncPull();
+  render();
+}
+async function syncPull(){
+  try {
+    SYNC.state = 'busy';
+    const { data, error } = await SB.from('app_state').select('data, updated_at').eq('user_id', USER.id).maybeSingle();
+    if (error) throw error;
+    if (data && data.data && Object.keys(data.data).length){
+      const serverAt = new Date(data.updated_at).getTime(), localAt = S._syncedAt || 0;
+      if (serverAt >= localAt || !S._syncedAt){ S = Object.assign(defaults(), data.data, { _owner: USER.id }); }
+      S._syncedAt = Math.max(serverAt, localAt); localStorage.setItem(KEY, JSON.stringify(S));
+      if (serverAt < localAt) await syncPush(true);   // 로컬이 더 최신이면 올림
+      SYNC.state = 'ok'; SYNC.at = new Date();
+    } else { await syncPush(true); }
+  } catch(e){ console.warn('sync pull', e); SYNC.state = 'err'; toast('서버와 동기화하지 못했습니다. 이 기기에는 저장됩니다'); }
+}
+async function syncPush(now){
+  if (!SB || !USER || SYNC.pushing) return;
+  SYNC.pushing = true; SYNC.state = 'busy';
+  try {
+    const payload = JSON.parse(JSON.stringify(S));
+    // 아직 업로드되지 않은 사진(dataURL)은 서버 JSON에서 제외 (Storage 업로드 후 경로로 대체됨)
+    (payload.contracts||[]).forEach(c => { if (Array.isArray(c.photos)) c.photos = c.photos.filter(u => typeof u === 'string' && u.startsWith('sb:')); });
+    delete payload._syncedAt;
+    const { data, error } = await SB.from('app_state').upsert({ user_id: USER.id, data: payload, device: navigator.userAgent.slice(0,80) }, { onConflict:'user_id' }).select('updated_at').single();
+    if (error) throw error;
+    S._syncedAt = new Date(data.updated_at).getTime(); localStorage.setItem(KEY, JSON.stringify(S));
+    SYNC.state = 'ok'; SYNC.at = new Date();
+  } catch(e){ console.warn('sync push', e); SYNC.state = 'err'; if (now) toast('서버 저장 실패: ' + (e.message||'')); }
+  finally { SYNC.pushing = false; }
+}
+/* 계약서 사진: dataURL → Storage 업로드 → 'sb:<path>' 로 교체 */
+async function persistPhotos(c){
+  if (!SB || !USER || !c || !Array.isArray(c.photos)) return;
+  let changed = false;
+  for (let i = 0; i < c.photos.length; i++){
+    const u = c.photos[i]; if (typeof u !== 'string' || !u.startsWith('data:')) continue;
+    try {
+      const blob = await (await fetch(u)).blob();
+      const path = `${USER.id}/${c.id}/${Date.now()}_${i}.jpg`;
+      const { error } = await SB.storage.from('contract-photos').upload(path, blob, { contentType:'image/jpeg', upsert:false });
+      if (error) throw error;
+      c.photos[i] = 'sb:' + path; PHOTO_URL_CACHE[path] = u; changed = true;
+    } catch(e){ console.warn('photo upload', e); }
+  }
+  if (changed){ save(); if (ui.detail === c.id) render(); }
+}
+async function photoUrl(path){
+  if (PHOTO_URL_CACHE[path]) return PHOTO_URL_CACHE[path];
+  if (!SB) return '';
+  const { data, error } = await SB.storage.from('contract-photos').createSignedUrl(path, 3600);
+  if (error) { console.warn('signed url', error); return ''; }
+  PHOTO_URL_CACHE[path] = data.signedUrl; return data.signedUrl;
+}
+async function hydratePhotos(){
+  for (const img of $$('img[data-sb]')){ const path = img.dataset.sb; delete img.dataset.sb; const url = await photoUrl(path); if (url) img.src = url; }
+}
+async function initAuth(){
+  if (!authAvailable()) return false;            // 키 미설정: 기존처럼 기기 저장만 (개발 모드)
+  SB = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const { data:{ session } } = await SB.auth.getSession();
+  if (session) await onSignedIn(session.user); else showLogin(true);
+  SB.auth.onAuthStateChange((ev, sess) => {
+    if (ev === 'SIGNED_IN' && sess && (!USER || USER.id !== sess.user.id)) onSignedIn(sess.user);
+    if (ev === 'SIGNED_OUT'){ USER = null; showLogin(true); }
+  });
+  return true;
+}
+
 /* ---------- 런타임 능력 (claude.ai 뷰어) ---------- */
 (async () => {
   render();
+  try { await initAuth(); } catch(e){ console.warn('auth init', e); }
   if (!window.claude || !window.claude.use) return;
   try { CAP.sample = await claude.use('sample'); if (CAP.sample){ try { const lim = await CAP.sample.limits(); CAP.images = !!lim?.images; } catch(e){} } } catch(e){}
   try { CAP.downloads = await claude.use('downloads'); } catch(e){}
