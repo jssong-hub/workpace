@@ -746,7 +746,7 @@ function renderDetail(v, c){
   ${c.autoRegistered?`<div class="banner"><b>AI 자동 등록</b> 계약서 사진에서 읽은 값입니다. 금액·기간·납부일을 확인해 주세요. <button class="btn sm" onclick="byId('${c.id}').autoRegistered=false;save();render()">확인 완료</button></div>`:''}
   <div class="card"><div class="meta">${TYPES[c.type]} · ${c.area||'-'}㎡ · ${esc(c.addr)}</div>
     <div class="grid3" style="margin-top:10px"><div class="mini"><div class="l">보증금</div><div class="v num">${manwon(c.deposit)}</div></div><div class="mini"><div class="l">월 임대료</div><div class="v num">${manwon(c.rent)}</div></div><div class="mini"><div class="l">${TAXABLE(c.type)?'부가세':'과세구분'}</div><div class="v num">${TAXABLE(c.type)?(c.vatSeparate?won(vatOf(c)):'포함/미표기'):'면세(주택)'}</div></div></div>
-    <div class="meta" style="margin-top:10px">임차인 <b>${esc(c.tenant)}</b> ${c.tenantBizName?`· ${esc(c.tenantBizName)} (${esc(c.tenantBiz)})`:''}<br>${fmtD(c.start)} ~ ${fmtD(c.end)} · 매월 ${c.payDay}일 납부 ${c.mgmt?`· 관리비 ${manwon(c.mgmt)}`:''}</div>
+    <div class="meta" style="margin-top:10px">임차인 <b>${esc(c.tenant)}</b> ${(c.tenantBizName&&c.tenantBizName!==c.tenant)?`· ${esc(c.tenantBizName)}`:''}${c.tenantBiz?` (${esc(c.tenantBiz)})`:''}<br>${fmtD(c.start)} ~ ${fmtD(c.end)} · 매월 ${c.payDay}일 납부 ${c.mgmt?`· 관리비 ${manwon(c.mgmt)}`:''}</div>
     ${c.memo?`<div class="note">📝 ${esc(c.memo)}</div>`:''}
     ${(c.photos&&c.photos.length)?`<div class="meta" style="margin-top:10px">계약서 사진 ${c.photos.length}장 · 눌러서 크게 보기</div>${photoStrip(c.photos,false)}`:''}
     <div class="btns"><button class="btn" onclick="compose('${c.id}','free')">임차인 문자</button><button class="btn" onclick="openRenew('${c.id}')">재계약/연장</button><button class="btn" onclick="openExpire('${c.id}')">만료·중개 의뢰</button></div></div>
