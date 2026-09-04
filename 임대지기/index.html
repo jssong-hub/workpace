@@ -1000,7 +1000,7 @@ window.addEventListener('resize', () => { if ($('#chart')) drawChart(); });
 
 /* ---------- 로그인 · 회사 서버 저장 (Supabase) ---------- */
 const SUPABASE_URL = 'https://lezpolceeqhdsgekidzi.supabase.co';
-const SUPABASE_ANON_KEY = '';                       // 운영자 1회 입력: Supabase → Project Settings → API Keys (publishable/anon)
+const SUPABASE_ANON_KEY = 'sb_publishable_QM64q5m87pTJgEBPXFArRw_Zm5r3OMj';                     // 운영자 1회 입력: Supabase → Project Settings → API Keys (publishable/anon)
 const AUTH_PROVIDERS = { email: true, kakao: false }; // 카카오 준비되면 kakao: true
 let SB = null, USER = null, SYNC = { state:'', at:null, pushing:false };
 const PHOTO_URL_CACHE = {};
