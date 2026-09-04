@@ -28,6 +28,8 @@ const SCHEMA = {
     property_name: { type: "string", description: "임대 물건을 짧게 부르는 이름. 예: 테헤란로 152 상가 101호" },
     property_type: { type: "string", description: "물건 유형. shop(상가·점포), office(사무실), house(주택·아파트·오피스텔 주거), land(토지), etc 중 하나" },
     address: { type: "string", description: "임대 물건 소재지 전체 주소" },
+    floor: { type: "string", description: "임대 부분의 층. 예: '1', 'B1', '5'. 없으면 빈 문자열" },
+    unit: { type: "string", description: "임대 부분의 호수. 예: '101', '1203'. 없으면 빈 문자열" },
     area_m2: { type: "number", description: "임대할 부분(전용) 면적, ㎡ 단위. 평으로만 적혀 있으면 3.3058을 곱해 환산" },
     tenant_name: { type: "string", description: "임차인 성명 또는 상호(법인이면 법인명)" },
     tenant_phone: { type: "string", description: "임차인 연락처(휴대폰). 없으면 빈 문자열" },
@@ -156,6 +158,7 @@ function toApp(x: Record<string, any>) {
   const type = ["shop", "office", "house", "land", "etc"].includes(x.property_type) ? x.property_type : "etc";
   const d = {
     name: x.property_name || "", type, addr: x.address || "", area: num(x.area_m2) || null,
+    floor: String(x.floor ?? "").trim(), unit: String(x.unit ?? "").trim(),
     tenant: x.tenant_name || "", tenantPhone: x.tenant_phone || "", tenantBiz: x.tenant_business_no || "", tenantBizName: x.tenant_business_name || "",
     deposit: num(x.deposit_krw), rent: num(x.monthly_rent_krw), mgmt: num(x.management_fee_krw),
     vatSeparate: type === "house" ? false : !!x.vat_separate,

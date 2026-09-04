@@ -75,3 +75,24 @@ const EXTRACT_SERVER = 'https://<프로젝트ID>.supabase.co/functions/v1/extrac
 - **판독 서비스가 혼잡합니다** → Upstage 초당 한도. 자동 재시도 후에도 실패한 경우. 사용량이 늘면 Upstage Tier 상향
 - **무료 프로젝트가 잠들었다(paused)** → Supabase 대시보드에서 Restore. 7일 미접속 시 발생. 실서비스는 Pro 플랜
 - 실시간 오류는 Edge Functions → `extract-contract` → **Logs** 에서 확인
+
+## 3단계-① 세무용 데이터 구조 (`migrations/002_tax_schema.sql`, 2026-09-04 적용)
+
+앱은 그대로 `app_state`(JSON)에 저장하고, 트리거 `trg_app_state_expand`가 저장될 때마다 아래 표로 자동 전개합니다(예시 데이터·예시 계약 c1~c3·예시 임대인 홍길동은 제외).
+
+| 표 | 내용 |
+|---|---|
+| `businesses` | 사업장(사업자등록번호·과세유형·공동사업 지분율·개업일) — 부가세 신고 단위 |
+| `properties` | 물건(층·호수·면적·과세/면세·취득일·취득가·토지/건물가액) |
+| `leases` / `lease_terms` | 임대계약 현재값 / 보증금·월세·관리비 변경 **이력**(적용일) |
+| `rent_ledger` | 월별 원장: 납부약정일(=공급시기)·공급가액·세액·입금 |
+| `tax_invoices` | 월별 세금계산서: 작성일자·발급기한(다음 달 10일)·공급가액·세액·산정근거·상태·승인번호 |
+| `expenses` | 필요경비(종소세) — 입력 화면은 후속 |
+| `deemed_rent_rates` | 간주임대료 이자율(연도별, 원문 확인 후 입력) |
+| `filing_periods` | 신고기간·산출값·세무사 검토 상태 |
+| `consents` / `subscriptions` | 동의 이력 / 월 구독 |
+
+직원용 한글 뷰(Table Editor에서 바로 보기·엑셀 머리글 한글): `임대인현황`, `임대현황`, `임대조건이력`, `임대료원장`, `세금계산서`, `신고기간`, `임대공급가액명세`.
+내부 열 이름은 영문(코드·API 호환), 각 열에 한글 설명(comment)이 붙어 있습니다. 전개 오류는 `extract_logs`(engine=`expand_app_state`)에 남고 앱 저장은 막지 않습니다.
+
+부가세 포함 계약(`vatSeparate=false`, 과세)은 공급가액 = 월세 ÷ 1.1 로 산정(`basis=included`)하며, 임차인 사업자번호가 없으면 세금계산서 상태가 `blocked`(발급불가)로 표시됩니다.

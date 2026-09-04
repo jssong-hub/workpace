@@ -427,7 +427,11 @@ function render(){
   window.scrollTo(0,0);
 }
 function demoBanner(){ return S.demo ? `<div class="banner"><b>예시 데이터</b>로 화면을 미리 보고 있습니다. 실제 계약을 등록하면 자동으로 전환됩니다. <button class="btn sm" onclick="clearDemo()">예시 지우기</button></div>` : ''; }
-function clearDemo(){ if(!confirm('예시 데이터를 모두 지우고 빈 상태로 시작할까요?')) return; const keep = { landlord:S.landlord, taxAgent:S.taxAgent, broker:S.broker, settings:S.settings }; S = Object.assign(defaults(), keep, { demo:false, contracts:[], rents:{}, invoices:{}, threads:[], notifications:[], dismissed:{} }); save(); render(); toast('예시 데이터를 지웠습니다'); }
+/* 예시 데이터 정리: 첫 실제 등록 또는 '예시 지우기' 때 호출. 예시 임대인(홍길동)도 비워 실제 정보 입력을 유도 */
+function purgeDemo(){ if (!S.demo) return false; const keep = { taxAgent:S.taxAgent, broker:S.broker, settings:S.settings }; const sample = defaults().landlord; const L = S.landlord||{}; const isSample = L.name===sample.name && L.bizNo===sample.bizNo;
+  const landlord = isSample ? { name:(typeof USER!=='undefined'&&USER?.user_metadata?.name)||'', phone:'', bizName:'', bizNo:'', addr:'', taxType:'general', email:(typeof USER!=='undefined'&&USER?.email)||'' } : L;
+  S = Object.assign(defaults(), keep, { demo:false, landlord, contracts:[], rents:{}, invoices:{}, threads:[], notifications:[], dismissed:{} }); return isSample; }
+function clearDemo(){ if(!confirm('예시 데이터를 모두 지우고 빈 상태로 시작할까요?')) return; const reset = purgeDemo(); save(); render(); toast(reset ? '예시 데이터를 지웠습니다. 설정에서 임대인·사업자 정보를 입력해 주세요.' : '예시 데이터를 지웠습니다'); }
 
 /* ---------- 홈 ---------- */
 function renderHome(v){
@@ -709,10 +713,11 @@ async function analyzeContract(){
     data.photos = PH.slice();
     const complete = data.rent && data.start && data.end;
     if (S.settings.autoRegister !== false && complete){
-      const c = { id:uid(), name:data.name||'이름 없는 물건', type:TYPES[data.type]?data.type:'etc', addr:data.addr||'', area:Number(data.area)||null, tenant:data.tenant||'', tenantPhone:data.tenantPhone||'', tenantBiz:data.tenantBiz||'', tenantBizName:data.tenantBizName||'', deposit:Number(data.deposit)||0, rent:Number(data.rent)||0, mgmt:Number(data.mgmt)||0, vatSeparate:!!data.vatSeparate, payDay:Math.min(31,Math.max(1,Number(data.payDay)||1)), start:data.start, end:data.end, memo:data.memo||'', review:Array.isArray(data.review)?data.review:null, quotes:[], photos:PH.slice(), autoRegistered:true };
+      const c = { id:uid(), name:data.name||'이름 없는 물건', type:TYPES[data.type]?data.type:'etc', addr:data.addr||'', area:Number(data.area)||null, tenant:data.tenant||'', tenantPhone:data.tenantPhone||'', tenantBiz:data.tenantBiz||'', tenantBizName:data.tenantBizName||'', floor:data.floor||'', unit:data.unit||'', deposit:Number(data.deposit)||0, rent:Number(data.rent)||0, mgmt:Number(data.mgmt)||0, vatSeparate:!!data.vatSeparate, payDay:Math.min(31,Math.max(1,Number(data.payDay)||1)), start:data.start, end:data.end, memo:data.memo||'', review:Array.isArray(data.review)?data.review:null, quotes:[], photos:PH.slice(), autoRegistered:true };
+      const resetL = purgeDemo();
       S.contracts.push(c); if (c.tenantPhone) S.threads.push({ id:uid(), kind:'tenant', name:`${c.tenant} (${c.name})`, phone:c.tenantPhone, contractId:c.id, messages:[] });
-      S.demo = false; save(); closeSheet(); ui.detail = c.id; render();
-      toast('계약서를 판독해 임대현황에 등록했습니다. 금액·기간을 확인해 주세요.');
+      save(); closeSheet(); ui.detail = c.id; render();
+      toast(resetL ? '첫 계약을 등록했습니다. 예시 데이터는 지웠고, 설정에서 임대인·사업자 정보를 입력해 주세요.' : '계약서를 판독해 임대현황에 등록했습니다. 금액·기간을 확인해 주세요.');
       persistPhotos(c);
       return;
     }
@@ -730,6 +735,7 @@ function openForm(id, pre){
   ${f('name','물건 이름')}
   <div class="row2"><div><label class="f">유형</label><select id="f_type">${Object.entries(TYPES).map(([k,v])=>`<option value="${k}" ${c.type===k?'selected':''}>${v}</option>`).join('')}</select></div><div>${f('area','전용면적(㎡)','number','step="0.1"')}</div></div>
   ${f('addr','소재지')}
+  <div class="row2"><div>${f('floor','층 (예: 1, B1)')}</div><div>${f('unit','호수 (예: 101)')}</div></div>
   <div class="row2"><div>${f('tenant','임차인 성명')}</div><div>${f('tenantPhone','임차인 연락처','tel')}</div></div>
   <div class="row2"><div>${f('tenantBizName','임차인 상호(세금계산서)')}</div><div>${f('tenantBiz','임차인 사업자번호')}</div></div>
   <div class="row2"><div>${f('deposit','보증금(원)','number')}</div><div>${f('rent','월 임대료(원, 공급가액)','number')}</div></div>
@@ -737,6 +743,12 @@ function openForm(id, pre){
   <div class="row2"><div>${f('start','계약 시작일','date')}</div><div>${f('end','계약 종료일','date')}</div></div>
   <label class="tw" style="margin-top:12px"><input type="checkbox" id="f_vatSeparate" ${c.vatSeparate?'checked':''}> 부가세 별도 (세금계산서 발급 대상)</label>
   <label class="f">특약 / 메모</label><textarea id="f_memo">${esc(c.memo||'')}</textarea>
+  <details class="acc" style="margin-top:12px"><summary>세무 정보 (선택 · 신고 자동화용)</summary>
+    <label class="f">과세 구분</label><select id="f_taxKind"><option value="" ${!c.taxKind?'selected':''}>자동 (주택=면세, 그 외=과세)</option><option value="taxable" ${c.taxKind==='taxable'?'selected':''}>과세 (세금계산서 대상)</option><option value="exempt" ${c.taxKind==='exempt'?'selected':''}>면세 (주택임대)</option></select>
+    <div class="row2"><div>${f('acqDate','취득일','date')}</div><div>${f('acqPrice','취득가액(원, 토지+건물)','number')}</div></div>
+    <div class="row2"><div>${f('landPrice','토지가액(원, 안분)','number')}</div><div><label class="f">등록임대주택</label><select id="f_registeredRental"><option value="" ${c.registeredRental==null?'selected':''}>해당 없음</option><option value="true" ${c.registeredRental===true?'selected':''}>등록</option><option value="false" ${c.registeredRental===false?'selected':''}>미등록</option></select></div></div>
+    <div class="note">취득 정보는 종합소득세 감가상각 계산에, 층·호수·면적은 부가세 부동산임대공급가액명세서에 쓰입니다. 모르면 비워 두세요.</div>
+  </details>
   <label class="f">계약서 사진 <span id="photoCnt" style="font-weight:400"></span></label>
   <div id="photoBox"></div>
   <input type="file" id="photoCam" accept="image/*" capture="environment" hidden>
@@ -752,11 +764,12 @@ function openForm(id, pre){
 }
 function saveForm(id, editing){
   const g = k => $('#f_'+k).value.trim(); const n = k => Number(g(k)||0);
-  const c = { id, name:g('name')||'이름 없는 물건', type:$('#f_type').value, area:n('area')||null, addr:g('addr'), tenant:g('tenant'), tenantPhone:g('tenantPhone'), tenantBizName:g('tenantBizName'), tenantBiz:g('tenantBiz'), deposit:n('deposit'), rent:n('rent'), mgmt:n('mgmt'), payDay:Math.min(31,Math.max(1,n('payDay')||1)), start:g('start'), end:g('end'), vatSeparate:$('#f_vatSeparate').checked, memo:g('memo'), review: window._pendingReview, quotes: window._pendingQuotes||[] };
+  const c = { id, name:g('name')||'이름 없는 물건', type:$('#f_type').value, area:n('area')||null, addr:g('addr'), tenant:g('tenant'), tenantPhone:g('tenantPhone'), tenantBizName:g('tenantBizName'), tenantBiz:g('tenantBiz'), deposit:n('deposit'), rent:n('rent'), mgmt:n('mgmt'), payDay:Math.min(31,Math.max(1,n('payDay')||1)), start:g('start'), end:g('end'), vatSeparate:$('#f_vatSeparate').checked, memo:g('memo'), review: window._pendingReview, quotes: window._pendingQuotes||[],
+    floor:g('floor'), unit:g('unit'), taxKind:$('#f_taxKind').value||undefined, acqDate:g('acqDate')||undefined, acqPrice:n('acqPrice')||undefined, landPrice:n('landPrice')||undefined,
+    registeredRental: $('#f_registeredRental').value==='' ? undefined : $('#f_registeredRental').value==='true' };
   if (!c.start || !c.end || c.end < c.start) return toast('계약 기간을 확인해 주세요');
   c.photos = PH.slice();
-  if (editing){ const old = byId(id); Object.assign(old, c, { review: c.review || old.review, quotes: old.quotes }); } else { S.contracts.push(c); if (c.tenantPhone) S.threads.push({ id:uid(), kind:'tenant', name:`${c.tenant} (${c.name})`, phone:c.tenantPhone, contractId:c.id, messages:[] }); }
-  if (S.demo && !editing){ /* 첫 실제 등록 시 예시 데이터 정리 안내 */ }
+  if (editing){ const old = byId(id); Object.assign(old, c, { review: c.review || old.review, quotes: old.quotes }); } else { if (S.demo && purgeDemo()) toast('예시 데이터를 지웠습니다. 설정에서 임대인·사업자 정보를 입력해 주세요.'); S.contracts.push(c); if (c.tenantPhone) S.threads.push({ id:uid(), kind:'tenant', name:`${c.tenant} (${c.name})`, phone:c.tenantPhone, contractId:c.id, messages:[] }); }
   if (!save()) toast('저장 공간이 부족해 사진 일부가 저장되지 않을 수 있습니다. 사진 수를 줄여 주세요.');
   closeSheet(); ui.detail = c.id; render(); toast(editing?'계약을 수정했습니다':'계약을 등록했습니다');
   persistPhotos(byId(id));
@@ -776,7 +789,7 @@ function renderDetail(v, c){
   ${c.autoRegistered?`<div class="banner"><b>AI 자동 등록</b> 계약서 사진에서 읽은 값입니다. 금액·기간·납부일을 확인해 주세요. <button class="btn sm" onclick="byId('${c.id}').autoRegistered=false;save();render()">확인 완료</button></div>`:''}
   <div class="card"><div class="meta">${TYPES[c.type]} · ${c.area||'-'}㎡ · ${esc(c.addr)}</div>
     <div class="grid3" style="margin-top:10px"><div class="mini"><div class="l">보증금</div><div class="v num">${manwon(c.deposit)}</div></div><div class="mini"><div class="l">월 임대료</div><div class="v num">${manwon(c.rent)}</div></div><div class="mini"><div class="l">${TAXABLE(c.type)?'부가세':'과세구분'}</div><div class="v num">${TAXABLE(c.type)?(c.vatSeparate?won(vatOf(c)):'포함/미표기'):'면세(주택)'}</div></div></div>
-    <div class="meta" style="margin-top:10px">임차인 <b>${esc(c.tenant)}</b> ${(c.tenantBizName&&c.tenantBizName!==c.tenant)?`· ${esc(c.tenantBizName)}`:''}${c.tenantBiz?` (${esc(c.tenantBiz)})`:''}<br>${fmtD(c.start)} ~ ${fmtD(c.end)} · 매월 ${c.payDay}일 납부 ${c.mgmt?`· 관리비 ${manwon(c.mgmt)}`:''}</div>
+    <div class="meta" style="margin-top:10px">${(c.floor||c.unit)?`${c.floor?esc(c.floor)+'층':''}${c.unit?' '+esc(c.unit)+'호':''} · `:''}임차인 <b>${esc(c.tenant)}</b> ${(c.tenantBizName&&c.tenantBizName!==c.tenant)?`· ${esc(c.tenantBizName)}`:''}${c.tenantBiz?` (${esc(c.tenantBiz)})`:''}<br>${fmtD(c.start)} ~ ${fmtD(c.end)} · 매월 ${c.payDay}일 납부 ${c.mgmt?`· 관리비 ${manwon(c.mgmt)}`:''}</div>
     ${c.memo?`<div class="note">📝 ${esc(c.memo)}</div>`:''}
     ${(c.photos&&c.photos.length)?`<div class="meta" style="margin-top:10px">계약서 사진 ${c.photos.length}장 · 눌러서 크게 보기</div>${photoStrip(c.photos,false)}`:''}
     <div class="btns"><button class="btn" onclick="compose('${c.id}','free')">임차인 문자</button><button class="btn" onclick="openRenew('${c.id}')">재계약/연장</button><button class="btn" onclick="openExpire('${c.id}')">만료·중개 의뢰</button></div></div>
@@ -959,7 +972,9 @@ function openSettings(focus){
   <details class="acc" ${focus==='me'||!focus?'open':''}><summary>임대인 · 사업자 정보</summary>
     <div class="row2"><div><label class="f">성명</label><input id="l_name" value="${esc(L.name)}"></div><div><label class="f">휴대폰</label><input id="l_phone" value="${esc(L.phone)}"></div></div>
     <div class="row2"><div><label class="f">상호</label><input id="l_bizName" value="${esc(L.bizName)}"></div><div><label class="f">사업자등록번호</label><input id="l_bizNo" value="${esc(L.bizNo)}"></div></div>
-    <label class="f">사업장 주소</label><input id="l_addr" value="${esc(L.addr)}"><label class="f">이메일</label><input id="l_email" value="${esc(L.email||'')}"></details>
+    <label class="f">사업장 주소</label><input id="l_addr" value="${esc(L.addr)}"><label class="f">이메일</label><input id="l_email" value="${esc(L.email||'')}">
+    <div class="row2"><div><label class="f">공동사업 지분율(%)</label><input id="l_shareRate" type="number" min="1" max="100" value="${esc(L.shareRate??100)}"></div><div><label class="f">개업일</label><input id="l_bizStart" type="date" value="${esc(L.bizStart||'')}"></div></div>
+    <div class="note">단독 사업이면 100. 공동명의 임대는 지분율대로 수입·경비가 배분됩니다.</div></details>
   <details class="acc" ${focus==='tax'?'open':''}><summary>지정 세무사</summary>
     <div class="row2"><div><label class="f">세무사</label><input id="a_name" value="${esc(A.name)}"></div><div><label class="f">사무소</label><input id="a_office" value="${esc(A.office)}"></div></div>
     <div class="row2"><div><label class="f">이메일</label><input id="a_email" value="${esc(A.email)}"></div><div><label class="f">연락처</label><input id="a_phone" value="${esc(A.phone)}"></div></div></details>
@@ -978,7 +993,7 @@ function openSettings(focus){
   <div class="note" style="text-align:center;margin-top:14px">임대지기 프로토타입 v0.9 · 대한세무법인</div>`);
 }
 function saveSettings(){ const g = id => $('#'+id).value.trim();
-  Object.assign(S.landlord, { name:g('l_name'), phone:g('l_phone'), bizName:g('l_bizName'), bizNo:g('l_bizNo'), addr:g('l_addr'), email:g('l_email') });
+  Object.assign(S.landlord, { name:g('l_name'), phone:g('l_phone'), bizName:g('l_bizName'), bizNo:g('l_bizNo'), addr:g('l_addr'), email:g('l_email'), shareRate: Number(g('l_shareRate'))||100, bizStart: g('l_bizStart')||'' });
   if (SB && USER) SB.from('profiles').upsert({ id: USER.id, name: S.landlord.name, phone: S.landlord.phone }).then(()=>{}, e=>console.warn('profile', e));
   Object.assign(S.taxAgent, { name:g('a_name'), office:g('a_office'), email:g('a_email'), phone:g('a_phone') });
   Object.assign(S.broker, { office:g('b_office'), name:g('b_name'), phone:g('b_phone') });
